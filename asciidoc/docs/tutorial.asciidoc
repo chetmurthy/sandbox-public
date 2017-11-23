@@ -3,4 +3,4 @@
 :toc:
 :toc-placement: preamble
 
-include:thrift-tutorial-example.asciidoc
+include::thrift-tutorial-example.asciidoc[]
