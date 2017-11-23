@@ -72,7 +72,7 @@ tools to invoke the server via HTTP.
 (and Cpp{Client,Server}.cpp).  When compiling, we'll need to make sure
 `NiceJSON.h` (which should be installed) is on the include-path.
 
-7:; When linking, we'll need to link with `libnicejson.a` and a few
+7:: When linking, we'll need to link with `libnicejson.a` and a few
 Boost libraries (typically, `boost_system`, `boost_filesystem`,
 `boost_thread).
 
