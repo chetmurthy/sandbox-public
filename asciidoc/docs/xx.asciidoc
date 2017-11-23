@@ -1,5 +1,5 @@
 [[building-other-languages]]
-thrift-nicejson: A Nice JSON protocol for Thrift
+thrift-nicejson: Building Other Languages
 ================================================
 :toc:
 :toc-placement: preamble
