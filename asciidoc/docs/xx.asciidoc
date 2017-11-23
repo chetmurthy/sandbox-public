@@ -1,4 +1,4 @@
-[[building-other-languages]]
+[[thrift-nicejson-building-other-languages]]
 thrift-nicejson: Building Other Languages
 ================================================
 :toc:
