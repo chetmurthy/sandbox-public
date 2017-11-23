@@ -1,13 +1,14 @@
 [[thrift-nicejson-a-nice-json-protocol-for-thrift]]
-thrift-nicejson: A Nice JSON protocol for Thrift
-================================================
+= thrift-nicejson: A Nice JSON protocol for Thrift
 :toc:
-:toc-placement: preamble
+:toc-placement!:
 
 This library provides a "nice" JSON wire-protocol for Thrift. That means
 you can define data-types/messages in Thrift, turn a crank, and get out
 de/marshallers and a protocol stack that talk all of Thrift's protocols,
 and also talk _idiomatic_ JSON.
+
+toc::[]
 
 For example, the (comes with) Thrift Calculator tutorial example has an
 `i32 add(1:i32 num1, 2:i32 num2)` method, which the client invokes as
