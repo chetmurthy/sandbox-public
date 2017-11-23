@@ -1,5 +1,5 @@
 [[thrift-nicejson-a-nice-json-protocol-for-thrift]]
-= thrift-nicejson: A Nice JSON protocol for Thrift
+= thrift-nicejson: Building Other Languages
 :toc:
 :toc-placement!:
 
