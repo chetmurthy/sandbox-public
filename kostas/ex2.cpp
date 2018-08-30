@@ -1,3 +1,4 @@
+#include <bitset>
 #include <cassert>
 #include <cstdint>
 #include <algorithm>    // std::sort
@@ -32,8 +33,18 @@ pp(uint32_t ip) {
 
 class IT {
 public:
+
+  IT() {
+    uniques = new bitset<(1UL<<32)>() ;
+  }
+
   inline void insert(const uint32_t ip) {
-    counts[ip]++ ;
+    if ((*uniques)[ip]) {
+      counts[ip]++ ;
+    }
+    else {
+      (*uniques)[ip] = true ;
+    }
   }
 
   inline void load() {
@@ -59,6 +70,7 @@ public:
 
     }
   }
+  bitset<(1UL<<32)> *uniques = NULL ;
   KEYMAP counts ;
 } ;
 
