@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include <bitset>
 #include <cassert>
 #include <cstdint>
@@ -79,6 +80,15 @@ public:
     }
   }
 
+  inline void just_read0_stdio() {
+    char c ;
+    const size_t SIZE = 1024 ;
+    char buf[SIZE] ;
+
+    while(0 < read(0, buf, SIZE)) {
+    }
+  }
+
   inline void just_read_stdio() {
     char c ;
 
@@ -145,6 +155,18 @@ main(int ac, char **av) {
     etime = high_resolution_clock::now() ;
     elapsed = duration_cast<duration<double>>(etime - stime);  
     cerr << "just-read: "<< elapsed.count() << endl ;
+
+  }
+
+  else if ("just-read0-stdio" == string(av[1])) {
+    IT it ;
+
+    stime = high_resolution_clock::now() ;
+    it.just_read0_stdio() ;
+
+    etime = high_resolution_clock::now() ;
+    elapsed = duration_cast<duration<double>>(etime - stime);  
+    cerr << "just-read0-stdio: "<< elapsed.count() << endl ;
 
   }
 
