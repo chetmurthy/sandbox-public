@@ -1,6 +1,7 @@
 #include <bitset>
 #include <cassert>
 #include <cstdint>
+#include <cstdio>
 #include <algorithm>    // std::sort
 #include <chrono>
 #include <iostream>
@@ -71,6 +72,30 @@ public:
     }
   }
 
+  inline void read_and_parse_stdio(const bool doinsert) {
+    char c ;
+
+    uint32_t ip = 0;
+    uint32_t octet = 0;
+    while(-1 != (c = getchar())) {
+      if (c == '\n') {
+	ip = (ip << 8) | octet ;
+	if (doinsert) insert(ip) ;
+	ip = 0 ;
+	octet = 0 ;
+      }
+      else if ('0' <= c && c <= '9') {
+	octet = octet * 10 + (c - '0') ;
+      }
+      else if (c == '.') {
+	ip = (ip << 8) | octet ;
+	octet = 0 ;
+      }
+      else { assert(false) ; }
+
+    }
+  }
+
   vector< ENTRY > entries ;
 
   inline void unload() {
@@ -108,11 +133,24 @@ main(int ac, char **av) {
     cerr << "read: "<< elapsed.count() << endl ;
 
   }
+
+  if ("read-and-parse-stdio" == string(av[1])) {
+    IT it ;
+
+    stime = high_resolution_clock::now() ;
+    it.read_and_parse_stdio(false) ;
+
+    etime = high_resolution_clock::now() ;
+    elapsed = duration_cast<duration<double>>(etime - stime);  
+    cerr << "read: "<< elapsed.count() << endl ;
+
+  }
+
   else if ("top-k-ips" == string(av[1])) {
     IT it ;
 
     stime = high_resolution_clock::now() ;
-    it.read_and_parse(true) ;
+    it.read_and_parse_stdio(true) ;
 
     etime = high_resolution_clock::now() ;
     elapsed = duration_cast<duration<double>>(etime - stime);  
