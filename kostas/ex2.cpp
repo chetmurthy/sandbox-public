@@ -48,6 +48,13 @@ public:
     }
   }
 
+  inline void just_read() {
+    char c ;
+
+    while(cin.get(c)) {
+    }
+  }
+
   inline void read_and_parse(const bool doinsert) {
     char c ;
 
@@ -69,6 +76,13 @@ public:
       }
       else { assert(false) ; }
 
+    }
+  }
+
+  inline void just_read_stdio() {
+    char c ;
+
+    while(-1 != (c = getchar())) {
     }
   }
 
@@ -122,7 +136,31 @@ main(int ac, char **av) {
   high_resolution_clock::time_point stime, etime ;
   duration<double> elapsed ;
 
-  if ("read-and-parse" == string(av[1])) {
+  if ("just-read" == string(av[1])) {
+    IT it ;
+
+    stime = high_resolution_clock::now() ;
+    it.just_read() ;
+
+    etime = high_resolution_clock::now() ;
+    elapsed = duration_cast<duration<double>>(etime - stime);  
+    cerr << "just-read: "<< elapsed.count() << endl ;
+
+  }
+
+  else if ("just-read-stdio" == string(av[1])) {
+    IT it ;
+
+    stime = high_resolution_clock::now() ;
+    it.just_read_stdio() ;
+
+    etime = high_resolution_clock::now() ;
+    elapsed = duration_cast<duration<double>>(etime - stime);  
+    cerr << "just-read-stdio: "<< elapsed.count() << endl ;
+
+  }
+
+  else if ("read-and-parse" == string(av[1])) {
     IT it ;
 
     stime = high_resolution_clock::now() ;
@@ -130,11 +168,11 @@ main(int ac, char **av) {
 
     etime = high_resolution_clock::now() ;
     elapsed = duration_cast<duration<double>>(etime - stime);  
-    cerr << "read: "<< elapsed.count() << endl ;
+    cerr << "read-and-parse: "<< elapsed.count() << endl ;
 
   }
 
-  if ("read-and-parse-stdio" == string(av[1])) {
+  else if ("read-and-parse-stdio" == string(av[1])) {
     IT it ;
 
     stime = high_resolution_clock::now() ;
@@ -142,7 +180,7 @@ main(int ac, char **av) {
 
     etime = high_resolution_clock::now() ;
     elapsed = duration_cast<duration<double>>(etime - stime);  
-    cerr << "read: "<< elapsed.count() << endl ;
+    cerr << "read-and-parse-stdio: "<< elapsed.count() << endl ;
 
   }
 
