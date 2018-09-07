@@ -120,6 +120,44 @@ public:
     }
   }
 
+  inline void read0_and_parse_stdio(const bool doinsert) {
+    char c ;
+
+    uint32_t ip = 0;
+    uint32_t octet = 0;
+
+    const size_t SIZE = 1024 ;
+    char buf[SIZE] ;
+    char *lim = buf + SIZE ;
+    char *cp = lim ;
+
+    while(true) {
+      if (cp == lim) {
+	size_t nread = read(0, buf, SIZE) ;
+	if (0 == nread) { break ; }
+	lim = buf + nread ;
+	cp = buf ;
+      }
+      c = *cp++ ;
+
+      if (c == '\n') {
+	ip = (ip << 8) | octet ;
+	if (doinsert) insert(ip) ;
+	ip = 0 ;
+	octet = 0 ;
+      }
+      else if ('0' <= c && c <= '9') {
+	octet = octet * 10 + (c - '0') ;
+      }
+      else if (c == '.') {
+	ip = (ip << 8) | octet ;
+	octet = 0 ;
+      }
+      else { assert(false) ; }
+
+    }
+  }
+
   vector< ENTRY > entries ;
 
   inline void unload() {
@@ -206,11 +244,23 @@ main(int ac, char **av) {
 
   }
 
+  else if ("read0-and-parse-stdio" == string(av[1])) {
+    IT it ;
+
+    stime = high_resolution_clock::now() ;
+    it.read0_and_parse_stdio(false) ;
+
+    etime = high_resolution_clock::now() ;
+    elapsed = duration_cast<duration<double>>(etime - stime);  
+    cerr << "read0-and-parse-stdio: "<< elapsed.count() << endl ;
+
+  }
+
   else if ("top-k-ips" == string(av[1])) {
     IT it ;
 
     stime = high_resolution_clock::now() ;
-    it.read_and_parse_stdio(true) ;
+    it.read0_and_parse_stdio(true) ;
 
     etime = high_resolution_clock::now() ;
     elapsed = duration_cast<duration<double>>(etime - stime);  
