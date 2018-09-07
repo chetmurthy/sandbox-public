@@ -47,7 +47,7 @@ public:
     }
   }
 
-  inline void load() {
+  inline void read_and_parse(const bool doinsert) {
     char c ;
 
     uint32_t ip = 0;
@@ -55,7 +55,7 @@ public:
     while(cin.get(c)) {
       if (c == '\n') {
 	ip = (ip << 8) | octet ;
-	insert(ip) ;
+	if (doinsert) insert(ip) ;
 	ip = 0 ;
 	octet = 0 ;
       }
@@ -70,6 +70,24 @@ public:
 
     }
   }
+
+  vector< ENTRY > entries ;
+
+  inline void unload() {
+      entries.resize(counts.size()) ;
+
+    int i = 0 ;
+    for(KEYMAP::const_iterator e = counts.begin() ; e != counts.end() ; ++e) {
+      ENTRY& ve = entries.at(i++) ;
+      ve.first = e->first ;
+      ve.second = e->second ;
+    }
+  }
+
+  inline void sort() {
+    std::sort (entries.begin(), entries.end(), compare);
+  }
+
   bitset<(1UL<<32)> *uniques = NULL ;
   KEYMAP counts ;
 } ;
@@ -78,36 +96,43 @@ int
 main(int ac, char **av) {
   high_resolution_clock::time_point stime, etime ;
   duration<double> elapsed ;
-  IT it ;
 
-  stime = high_resolution_clock::now() ;
-  it.load() ;
+  if ("read-and-parse" == string(av[1])) {
+    IT it ;
 
-  etime = high_resolution_clock::now() ;
-  elapsed = duration_cast<duration<double>>(etime - stime);  
-  cerr << "read: "<< elapsed.count() << endl ;
+    stime = high_resolution_clock::now() ;
+    it.read_and_parse(false) ;
 
-  cerr << it.counts.size() << " entries" << endl ;
+    etime = high_resolution_clock::now() ;
+    elapsed = duration_cast<duration<double>>(etime - stime);  
+    cerr << "read: "<< elapsed.count() << endl ;
 
-  vector< ENTRY > entries(it.counts.size()) ;
-
-  stime = high_resolution_clock::now() ;
-  {
-    int i = 0 ;
-    for(KEYMAP::const_iterator e = it.counts.begin() ; e != it.counts.end() ; ++e) {
-      ENTRY& ve = entries.at(i++) ;
-      ve.first = e->first ;
-      ve.second = e->second ;
-    }
   }
-  etime = high_resolution_clock::now() ;
-  elapsed = duration_cast<duration<double>>(etime - stime);  
-  cerr << "unload: " << elapsed.count() << endl ;
+  else if ("top-k-ips" == string(av[1])) {
+    IT it ;
 
-  stime = high_resolution_clock::now() ;
-  std::sort (entries.begin(), entries.end(), compare); // 12 32 45 71(26 33 53 80)
-  etime = high_resolution_clock::now() ;
-  elapsed = duration_cast<duration<double>>(etime - stime);  
-  cerr << "sort: " << elapsed.count() << endl ;
+    stime = high_resolution_clock::now() ;
+    it.read_and_parse(true) ;
 
+    etime = high_resolution_clock::now() ;
+    elapsed = duration_cast<duration<double>>(etime - stime);  
+    cerr << "read: "<< elapsed.count() << endl ;
+
+    cerr << it.counts.size() << " entries" << endl ;
+
+    stime = high_resolution_clock::now() ;
+    it.unload() ;
+    etime = high_resolution_clock::now() ;
+    elapsed = duration_cast<duration<double>>(etime - stime);  
+    cerr << "unload: " << elapsed.count() << endl ;
+
+    stime = high_resolution_clock::now() ;
+    it.sort() ;
+    etime = high_resolution_clock::now() ;
+    elapsed = duration_cast<duration<double>>(etime - stime);  
+    cerr << "sort: " << elapsed.count() << endl ;
+  }
+  else {
+    cerr << "no task selected\n" ;
+  }
 }
