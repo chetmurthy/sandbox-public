@@ -8,6 +8,7 @@
 #include <algorithm>    // std::sort
 #include <chrono>
 #include <istream>
+#include <fstream>
 #include <iostream>
 #include <unordered_map>
 #include <random>
@@ -52,10 +53,22 @@ public:
     }
   }
 
-  inline void just_read() {
+  inline void do_just_read(istream& is) {
     char c ;
 
-    while(cin.get(c)) {
+    while(is.get(c)) {
+    }
+  }
+
+  inline void just_read(const string& fname) {
+    if ("-" == fname) {
+      do_just_read(cin) ;
+    }
+    else {
+      ifstream is ;
+      is.open (fname, std::ifstream::in);
+      do_just_read(is) ;
+      
     }
   }
 
@@ -87,11 +100,24 @@ public:
     printf("%d.%d.%d.%d\n", b.octets[3], b.octets[2], b.octets[1], b.octets[0]) ;
   }
 
-  inline void read_lines_and_parse(bool doprint) {
+  inline void read_lines_and_parse(const string& fname, bool doprint) {
+    if ("-" == fname) {
+      do_read_lines_and_parse(cin, doprint) ;
+    }
+    else {
+      ifstream is ;
+      is.open (fname, std::ifstream::in);
+      do_read_lines_and_parse(is, doprint) ;
+      
+    }
+  }
+
+  inline void do_read_lines_and_parse(istream& is, bool doprint) {
     string line ;
-    while(cin) {
-      getline(cin, line) ;
-      if (!cin) break ;
+
+    while(is) {
+      getline(is, line) ;
+      if (!is) break ;
 
       const char *cp = line.c_str() ;
       const char *lim = cp + line.size() ;
@@ -99,13 +125,12 @@ public:
       if (doprint) print(ip) ;
     }
   }
-
-  inline void read_and_parse(const bool doinsert, const bool doprint) {
+  inline void do_read_and_parse(istream& is, const bool doinsert, const bool doprint) {
     char c ;
 
     uint32_t ip = 0;
     uint32_t octet = 0;
-    while(cin.get(c)) {
+    while(is.get(c)) {
       if (c == '\n') {
 	ip = (ip << 8) | octet ;
 	if (doinsert) insert(ip) ;
@@ -125,30 +150,63 @@ public:
     }
   }
 
-  inline void just_read0() {
+  inline void read_and_parse(const string& fname, const bool doinsert, const bool doprint) {
+    if ("-" == fname) {
+      do_read_and_parse(cin, doinsert, doprint) ;
+    }
+    else {
+      ifstream is ;
+      is.open (fname, std::ifstream::in);
+      do_read_and_parse(is, doinsert, doprint) ;
+      
+    }
+  }
+
+  inline void do_just_read0(int fd) {
     char c ;
     const size_t SIZE = 131072 ;
     char buf[SIZE] ;
 
     
-    posix_fadvise (0, 0, 0, POSIX_FADV_SEQUENTIAL);
-    while(0 < read(0, buf, SIZE)) {
+    posix_fadvise (fd, 0, 0, POSIX_FADV_SEQUENTIAL);
+    while(0 < read(fd, buf, SIZE)) {
     }
   }
 
-  inline void just_read_stdio() {
+  inline void just_read0(const string& fname) {
+    if ("-" == fname) {
+      do_just_read0(0) ;
+    }
+    else {
+      int fd = open(fname.c_str(), O_RDONLY) ;
+      if (fd < 0) perror("just_read0: open") ;
+      do_just_read0(fd) ;
+    }
+  }
+
+  inline void do_just_read_stdio(FILE *fp) {
     char c ;
 
-    while(-1 != (c = getchar())) {
+    while(-1 != (c = getc(fp))) {
     }
   }
 
-  inline void read_and_parse_stdio(const bool doinsert, const bool doprint) {
+  inline void just_read_stdio(const string& fname) {
+    if ("-" == fname) {
+      do_just_read_stdio(stdin) ;
+    }
+    else {
+      FILE *fp = fopen(fname.c_str(), "r") ;
+      do_just_read_stdio(fp) ;
+    }
+  }
+
+  inline void do_read_and_parse_stdio(FILE *fp, const bool doinsert, const bool doprint) {
     char c ;
 
     uint32_t ip = 0;
     uint32_t octet = 0;
-    while(-1 != (c = getchar())) {
+    while(-1 != (c = getc(fp))) {
       if (c == '\n') {
 	ip = (ip << 8) | octet ;
 	if (doinsert) insert(ip) ;
@@ -168,7 +226,17 @@ public:
     }
   }
 
-  inline void read0_and_parse(const bool doinsert, const bool doprint) {
+  inline void read_and_parse_stdio(const string& fname, const bool doinsert, const bool doprint) {
+    if ("-" == fname) {
+      do_read_and_parse_stdio(stdin, doinsert, doprint) ;
+    }
+    else {
+      FILE *fp = fopen(fname.c_str(), "r") ;
+      do_read_and_parse_stdio(fp, doinsert, doprint) ;
+    }
+  }
+
+  inline void do_read0_and_parse(int fd, const bool doinsert, const bool doprint) {
     char c ;
 
     uint32_t ip = 0;
@@ -181,7 +249,7 @@ public:
 
     while(true) {
       if (cp == lim) {
-	size_t nread = read(0, buf, SIZE) ;
+	size_t nread = read(fd, buf, SIZE) ;
 	if (0 == nread) { break ; }
 	lim = buf + nread ;
 	cp = buf ;
@@ -204,6 +272,17 @@ public:
       }
       else { assert(false) ; }
 
+    }
+  }
+
+  inline void read0_and_parse(const string& fname, const bool doinsert, const bool doprint) {
+    if ("-" == fname) {
+      do_read0_and_parse(0, doinsert, doprint) ;
+    }
+    else {
+      int fd = open(fname.c_str(), O_RDONLY) ;
+      if (fd < 0) perror("read0_and_parse: open") ;
+      do_read0_and_parse(fd, doinsert, doprint) ;
     }
   }
 
@@ -233,11 +312,16 @@ main(int ac, char **av) {
   high_resolution_clock::time_point stime, etime ;
   duration<double> elapsed ;
 
-  if ("just-read" == string(av[1])) {
+  assert(ac >= 3) ;
+
+  string op = av[1] ;
+  string fname = av[2] ;
+
+  if ("just-read" == op) {
     IT it ;
 
     stime = high_resolution_clock::now() ;
-    it.just_read() ;
+    it.just_read(fname) ;
 
     etime = high_resolution_clock::now() ;
     elapsed = duration_cast<duration<double>>(etime - stime);  
@@ -245,11 +329,11 @@ main(int ac, char **av) {
 
   }
 
-  else if ("just-read0" == string(av[1])) {
+  else if ("just-read0" == op) {
     IT it ;
 
     stime = high_resolution_clock::now() ;
-    it.just_read0() ;
+    it.just_read0(fname) ;
 
     etime = high_resolution_clock::now() ;
     elapsed = duration_cast<duration<double>>(etime - stime);  
@@ -257,11 +341,11 @@ main(int ac, char **av) {
 
   }
 
-  else if ("just-read-stdio" == string(av[1])) {
+  else if ("just-read-stdio" == op) {
     IT it ;
 
     stime = high_resolution_clock::now() ;
-    it.just_read_stdio() ;
+    it.just_read_stdio(fname) ;
 
     etime = high_resolution_clock::now() ;
     elapsed = duration_cast<duration<double>>(etime - stime);  
@@ -269,33 +353,33 @@ main(int ac, char **av) {
 
   }
 
-  else if ("read-lines-and-parse" == string(av[1])) {
+  else if ("read-lines-and-parse" == op) {
     IT it ;
 
     stime = high_resolution_clock::now() ;
-    it.read_lines_and_parse(false) ;
+    it.read_lines_and_parse(fname, false) ;
 
     etime = high_resolution_clock::now() ;
     elapsed = duration_cast<duration<double>>(etime - stime);  
     cerr << "read-lines-and-parse: "<< elapsed.count() << endl ;
   }
 
-  else if ("read-lines-and-print" == string(av[1])) {
+  else if ("read-lines-and-print" == op) {
     IT it ;
 
     stime = high_resolution_clock::now() ;
-    it.read_lines_and_parse(true) ;
+    it.read_lines_and_parse(fname,true) ;
 
     etime = high_resolution_clock::now() ;
     elapsed = duration_cast<duration<double>>(etime - stime);  
     cerr << "read-lines-and-print: "<< elapsed.count() << endl ;
   }
 
-  else if ("read-and-parse" == string(av[1])) {
+  else if ("read-and-parse" == op) {
     IT it ;
 
     stime = high_resolution_clock::now() ;
-    it.read_and_parse(false, false) ;
+    it.read_and_parse(fname, false, false) ;
 
     etime = high_resolution_clock::now() ;
     elapsed = duration_cast<duration<double>>(etime - stime);  
@@ -303,11 +387,11 @@ main(int ac, char **av) {
 
   }
 
-  else if ("read-and-parse-stdio" == string(av[1])) {
+  else if ("read-and-parse-stdio" == op) {
     IT it ;
 
     stime = high_resolution_clock::now() ;
-    it.read_and_parse_stdio(false, false) ;
+    it.read_and_parse_stdio(fname, false, false) ;
 
     etime = high_resolution_clock::now() ;
     elapsed = duration_cast<duration<double>>(etime - stime);  
@@ -315,11 +399,11 @@ main(int ac, char **av) {
 
   }
 
-  else if ("read0-and-parse" == string(av[1])) {
+  else if ("read0-and-parse" == op) {
     IT it ;
 
     stime = high_resolution_clock::now() ;
-    it.read0_and_parse(false, false) ;
+    it.read0_and_parse(fname, false, false) ;
 
     etime = high_resolution_clock::now() ;
     elapsed = duration_cast<duration<double>>(etime - stime);  
@@ -327,11 +411,11 @@ main(int ac, char **av) {
 
   }
 
-  else if ("read0-and-print" == string(av[1])) {
+  else if ("read0-and-print" == op) {
     IT it ;
 
     stime = high_resolution_clock::now() ;
-    it.read0_and_parse(false, true) ;
+    it.read0_and_parse(fname, false, true) ;
 
     etime = high_resolution_clock::now() ;
     elapsed = duration_cast<duration<double>>(etime - stime);  
@@ -339,11 +423,11 @@ main(int ac, char **av) {
 
   }
 
-  else if ("top-k-ips" == string(av[1])) {
+  else if ("top-k-ips" == op) {
     IT it ;
 
     stime = high_resolution_clock::now() ;
-    it.read0_and_parse(true, false) ;
+    it.read0_and_parse(fname, true, false) ;
 
     etime = high_resolution_clock::now() ;
     elapsed = duration_cast<duration<double>>(etime - stime);  
