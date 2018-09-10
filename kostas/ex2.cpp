@@ -1,3 +1,5 @@
+#include <fcntl.h>
+#include <linux/fadvise.h>
 #include <unistd.h>
 #include <bitset>
 #include <cassert>
@@ -5,6 +7,7 @@
 #include <cstdio>
 #include <algorithm>    // std::sort
 #include <chrono>
+#include <istream>
 #include <iostream>
 #include <unordered_map>
 #include <random>
@@ -56,7 +59,48 @@ public:
     }
   }
 
-  inline void read_and_parse(const bool doinsert) {
+  inline uint32_t parse(char *cp, const char *lim) {
+    uint32_t ip = 0;
+    uint32_t octet = 0;
+    
+    while (cp < lim) {
+      char c = *cp++ ;
+      if ('0' <= c && c <= '9') {
+	octet = octet * 10 + (c - '0') ;
+      }
+      else if (c == '.') {
+	ip = (ip << 8) | octet ;
+	octet = 0 ;
+      }
+      else { assert(false) ; }
+    }
+    ip = (ip << 8) | octet ;
+    return ip ;
+  }
+
+  inline void print(uint32_t ip) {
+    union {
+      unsigned char octets[4] ;
+      uint32_t word ;
+    } b ;
+    b.word = ip ;
+    printf("%d.%d.%d.%d\n", b.octets[3], b.octets[2], b.octets[1], b.octets[0]) ;
+  }
+
+  inline void read_lines_and_parse(bool doprint) {
+    string line ;
+    while(cin) {
+      getline(cin, line) ;
+      if (!cin) break ;
+
+      const char *cp = line.c_str() ;
+      const char *lim = cp + line.size() ;
+      uint32_t ip = parse(const_cast<char *>(cp), lim) ;
+      if (doprint) print(ip) ;
+    }
+  }
+
+  inline void read_and_parse(const bool doinsert, const bool doprint) {
     char c ;
 
     uint32_t ip = 0;
@@ -65,6 +109,7 @@ public:
       if (c == '\n') {
 	ip = (ip << 8) | octet ;
 	if (doinsert) insert(ip) ;
+	if (doprint) print(ip) ;
 	ip = 0 ;
 	octet = 0 ;
       }
@@ -80,11 +125,13 @@ public:
     }
   }
 
-  inline void just_read0_stdio() {
+  inline void just_read0() {
     char c ;
-    const size_t SIZE = 1024 ;
+    const size_t SIZE = 131072 ;
     char buf[SIZE] ;
 
+    
+    posix_fadvise (0, 0, 0, POSIX_FADV_SEQUENTIAL);
     while(0 < read(0, buf, SIZE)) {
     }
   }
@@ -96,7 +143,7 @@ public:
     }
   }
 
-  inline void read_and_parse_stdio(const bool doinsert) {
+  inline void read_and_parse_stdio(const bool doinsert, const bool doprint) {
     char c ;
 
     uint32_t ip = 0;
@@ -105,6 +152,7 @@ public:
       if (c == '\n') {
 	ip = (ip << 8) | octet ;
 	if (doinsert) insert(ip) ;
+	if (doprint) print(ip) ;
 	ip = 0 ;
 	octet = 0 ;
       }
@@ -120,7 +168,7 @@ public:
     }
   }
 
-  inline void read0_and_parse_stdio(const bool doinsert) {
+  inline void read0_and_parse(const bool doinsert, const bool doprint) {
     char c ;
 
     uint32_t ip = 0;
@@ -143,6 +191,7 @@ public:
       if (c == '\n') {
 	ip = (ip << 8) | octet ;
 	if (doinsert) insert(ip) ;
+	if (doprint) print(ip) ;
 	ip = 0 ;
 	octet = 0 ;
       }
@@ -196,15 +245,15 @@ main(int ac, char **av) {
 
   }
 
-  else if ("just-read0-stdio" == string(av[1])) {
+  else if ("just-read0" == string(av[1])) {
     IT it ;
 
     stime = high_resolution_clock::now() ;
-    it.just_read0_stdio() ;
+    it.just_read0() ;
 
     etime = high_resolution_clock::now() ;
     elapsed = duration_cast<duration<double>>(etime - stime);  
-    cerr << "just-read0-stdio: "<< elapsed.count() << endl ;
+    cerr << "just-read0: "<< elapsed.count() << endl ;
 
   }
 
@@ -220,11 +269,33 @@ main(int ac, char **av) {
 
   }
 
+  else if ("read-lines-and-parse" == string(av[1])) {
+    IT it ;
+
+    stime = high_resolution_clock::now() ;
+    it.read_lines_and_parse(false) ;
+
+    etime = high_resolution_clock::now() ;
+    elapsed = duration_cast<duration<double>>(etime - stime);  
+    cerr << "read-lines-and-parse: "<< elapsed.count() << endl ;
+  }
+
+  else if ("read-lines-and-print" == string(av[1])) {
+    IT it ;
+
+    stime = high_resolution_clock::now() ;
+    it.read_lines_and_parse(true) ;
+
+    etime = high_resolution_clock::now() ;
+    elapsed = duration_cast<duration<double>>(etime - stime);  
+    cerr << "read-lines-and-print: "<< elapsed.count() << endl ;
+  }
+
   else if ("read-and-parse" == string(av[1])) {
     IT it ;
 
     stime = high_resolution_clock::now() ;
-    it.read_and_parse(false) ;
+    it.read_and_parse(false, false) ;
 
     etime = high_resolution_clock::now() ;
     elapsed = duration_cast<duration<double>>(etime - stime);  
@@ -236,7 +307,7 @@ main(int ac, char **av) {
     IT it ;
 
     stime = high_resolution_clock::now() ;
-    it.read_and_parse_stdio(false) ;
+    it.read_and_parse_stdio(false, false) ;
 
     etime = high_resolution_clock::now() ;
     elapsed = duration_cast<duration<double>>(etime - stime);  
@@ -244,15 +315,27 @@ main(int ac, char **av) {
 
   }
 
-  else if ("read0-and-parse-stdio" == string(av[1])) {
+  else if ("read0-and-parse" == string(av[1])) {
     IT it ;
 
     stime = high_resolution_clock::now() ;
-    it.read0_and_parse_stdio(false) ;
+    it.read0_and_parse(false, false) ;
 
     etime = high_resolution_clock::now() ;
     elapsed = duration_cast<duration<double>>(etime - stime);  
-    cerr << "read0-and-parse-stdio: "<< elapsed.count() << endl ;
+    cerr << "read0-and-parse: "<< elapsed.count() << endl ;
+
+  }
+
+  else if ("read0-and-print" == string(av[1])) {
+    IT it ;
+
+    stime = high_resolution_clock::now() ;
+    it.read0_and_parse(false, true) ;
+
+    etime = high_resolution_clock::now() ;
+    elapsed = duration_cast<duration<double>>(etime - stime);  
+    cerr << "read0-and-print: "<< elapsed.count() << endl ;
 
   }
 
@@ -260,7 +343,7 @@ main(int ac, char **av) {
     IT it ;
 
     stime = high_resolution_clock::now() ;
-    it.read0_and_parse_stdio(true) ;
+    it.read0_and_parse(true, false) ;
 
     etime = high_resolution_clock::now() ;
     elapsed = duration_cast<duration<double>>(etime - stime);  
