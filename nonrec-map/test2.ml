@@ -33,7 +33,7 @@ and stmt =
 
 type 'a dt = {
   it : 'a ;
-  map_position : 'a dt -> Lexing.position -> Lexing.position ;
+  map_position : 'a dt -> position -> position ;
   map_bop : 'a dt -> bop -> bop ;
   map_uop : 'a dt -> uop -> uop ;
   map_expr : 'a dt -> expr -> expr ;
