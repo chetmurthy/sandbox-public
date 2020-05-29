@@ -1,0 +1,8 @@
+#!/bin/bash -x
+
+rm -f *.cm*
+
+ocamlfind ocamlc -package fmt,camlp5,pa_ppx.deriving_plugins.std -syntax camlp5o -c test.ml
+not-ocamlfind preprocess -package fmt,camlp5,pa_ppx.deriving_plugins.std,camlp5.pr_o -syntax camlp5o test.ml > test.ppo
+ocamlfind ocamlc -package fmt,camlp5,pa_ppx.deriving_plugins.std -syntax camlp5o -c -i test2.ml
+
