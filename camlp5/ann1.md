@@ -4,7 +4,7 @@
 I'm pleased to announce the release of two related projects:
 
 1. [Camlp5](https://github.com/camlp5/camlp5): version 8.00~alpha01 is
-an alpha release of Camlp5, with full support for Ocaml syntax up to
+an alpha release of Camlp5, with full support for OCaml syntax up to
 version 4.10.0, as well as minimal compatibility with version 4.11.0.
 In particular there is full support for PPX attributes and extensions.
 
@@ -26,9 +26,9 @@ some of the re-implemented rewriters are more-powerful than their
 original namesakes, and there are new ones that add interesting
 functionality.
 
-## For democratizing macro-extension-authoring in Ocaml
+## For democratizing macro-extension-authoring in OCaml
 
-TL;DR Writing Ocaml PPX rewriters is **hard work**.  There is a
+TL;DR Writing OCaml PPX rewriters is **hard work**.  There is a
 complicated infrastructure that is hard to explain, there are multiple
 such incompatible infrastructures (maybe these are merging?) and it is
 hard enough that most Ocaml programmers do not write macro-extensions
@@ -105,11 +105,11 @@ With time, it's clear that PPX has produced the same thing.
 The same argument (that each change to the Ocaml AST requires work to
 update ocaml-migrate-parsetree) can be made for PPX.  Amusingly, one
 could imagine using ocaml-migrate-parsetree as the basis for making
-Camlp5 ocaml-version-independent, too.
+Camlp5 OCaml-version-independent, too.
 
 ## Arguments against the current API(s) of PPX rewriting
 
-The overall argument is that it's too conplicated for most ocaml
+The overall argument is that it's too conplicated for most OCaml
 programmers to write their own extensions; what we see instead of a
 healthy ecosystem of many authors writing and helping-improve PPX
 rewriters, is a small number of rewriters, mostly written by Jane
@@ -167,7 +167,7 @@ bathwater".  Camlp5 has a lot of very valuable infrastructure that can
 be used to make writing macro-preprocessors much easier.  `pa_ppx`
 adds a few more.
 
-1. Quotations for patterns and expressions over all important ocaml
+1. Quotations for patterns and expressions over all important OCaml
 AST types.
 
 2. "extensible functions" to make the process of recursing down the
