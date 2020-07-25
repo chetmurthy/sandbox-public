@@ -18,12 +18,14 @@ This allows projects to combine the existing style of Camlp5 syntax
 extension, with PPX rewriting, without having to jump thru hoops to
 invoke camlp5 on some files, and PPX processors on others.
 
-`pa_ppx` is no more compatible with existing `ppxlib`-based (or
-otherwise) rewriters than Camlp5 was previously -- rather, it is an
-infrastructure for developing PPX rewriters that are compatible with
-Camlp5, as well as a collection of such PPX rewriters.  In addition,
-some of the re-implemented rewriters are more-powerful than their
-original namesakes, and there are new ones that add interesting
+Camlp5 alone is not compatible with existing PPX rewriters: Camlp5
+syntax-extensions (e.g. "stream parsers") would be rejected by the
+OCaml parser, and PPX extensions/attributes are ignored by Camlp5
+(again, without `pa_ppx`).  `pa_ppx` provides Camlp5-compatible
+versions of many existing PPX rewriters, as well as new ones, so that
+one can use Camlp5 syntax extensions as well as PPX rewriters.  In
+addition, some of the re-implemented rewriters are more-powerful than
+their original namesakes, and there are new ones that add interesting
 functionality.
 
 ## For democratizing macro-extension-authoring in OCaml
@@ -103,13 +105,16 @@ With time, it's clear that PPX has produced the same thing.
 5. Maintaining Camlp4 was always labor that fell on the Ocaml team.
 
 The same argument (that each change to the Ocaml AST requires work to
-update ocaml-migrate-parsetree) can be made for PPX.  Amusingly, one
-could imagine using ocaml-migrate-parsetree as the basis for making
-Camlp5 OCaml-version-independent, too.
+update Camlp5) can be made for PPX (specifically, this is the raison
+d'etre of ocaml-migrate-parsetree).  Amusingly, one could imagine
+using ocaml-migrate-parsetree as the basis for making Camlp5
+OCaml-version-independent, too.  That is, the "backend" of Camlp5
+could use ocaml-migrate-parsetree to produce ASTs for a version of
+OCaml different from the one on which it was compiled.
 
 ## Arguments against the current API(s) of PPX rewriting
 
-The overall argument is that it's too conplicated for most OCaml
+The overall argument is that it's too complicated for most OCaml
 programmers to write their own extensions; what we see instead of a
 healthy ecosystem of many authors writing and helping-improve PPX
 rewriters, is a small number of rewriters, mostly written by Jane
