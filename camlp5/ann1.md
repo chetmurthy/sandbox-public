@@ -206,13 +206,14 @@ I'm not trying to convince you to switch away from PPX to Camlp5.
 Perhaps, I'm not even merely arguing that you should use `pa_ppx` and
 author new macro-extensions on it.  But I *am* arguing that the features of
 
-1. quotations, with antiquotations in as many places as possible
+1. quotations, with antiquotations in as many places as possible, and
+   hence, *in places where Ocaml identifiers are not permitted*.
 
 2. facilities like "extensible functions", with syntax support for
 them
 
 3. a new AST type, that is suitable for macro-preprocessing, but isn't
-merely "s-expression" (after all, there's a reason we all use
+merely "s-expressions" (after all, there's a reason we all use
 strongly-typed languages)
 
 3. an extensible parser for the Ocaml language, usable in PPX
