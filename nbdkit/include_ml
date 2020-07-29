@@ -1,0 +1,14 @@
+#use "topfind.camlp5";;
+#require "camlp5.pa_o";;
+#require "fmt";;
+#load "d2d.cmo";;
+
+let pp_fstream fstrm = Fmt.(pf stdout "#fstrm@%d" (Fstream.count fstrm)) ;;
+#install_printer pp_fstream ;;
+
+(*
+;;; Local Variables: ***
+;;; mode:tuareg ***
+;;; End: ***
+
+*)
