@@ -1,7 +1,9 @@
 #use "topfind.camlp5";;
 #require "camlp5.pa_o";;
-#require "fmt";;
+#require "bos,pcre,fmt";;
+#load "d2d_shared.cmo";;
 #load "d2d.cmo";;
+#load "d2d2.cmo";;
 
 let pp_fstream fstrm = Fmt.(pf stdout "#fstrm@%d" (Fstream.count fstrm)) ;;
 #install_printer pp_fstream ;;
