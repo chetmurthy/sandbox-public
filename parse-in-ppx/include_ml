@@ -1,0 +1,26 @@
+#use "topfind.camlp5";;
+#require "camlp5.pa_o";;
+#require "camlp5.pr_o";;
+#require "bos,pcre,fmt";;
+#load "toy.cmo";;
+#require "pa_ppx.base";;
+
+#directory "../../pa_ppx/tests-ounit2";;
+
+(* these are needed by this example, not by pa_ppx *)
+#require "compiler-libs.common" ;;
+#require "bos";;
+
+#load "../../pa_ppx/tests-ounit2/papr_util.cmo";;
+open Papr_util ;;
+
+
+
+#load "pa_fsm.cmo";;
+
+(*
+;;; Local Variables: ***
+;;; mode:tuareg ***
+;;; End: ***
+
+*)
