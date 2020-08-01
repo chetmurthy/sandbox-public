@@ -1,7 +1,5 @@
 *.cm*
 *.o
 *.opt
-d2d
-d2d2
 *.ppo
-disk
+fsm_test

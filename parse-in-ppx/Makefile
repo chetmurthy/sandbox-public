@@ -2,12 +2,15 @@
 DEBUG=
 PACKAGES=bos,fmt,camlp5,pcre,pa_ppx.base,camlp5.quotations,camlp5.extfun
 
-all: toy.cmo pa_fsm.cmo
+all: toy.cmo pa_fsm.cmo fsm_test
 
-fsm_test.ppo: fsm_test.ml toy.cmo pa_fsm.cmo
+fsm_test: fsm_test.ml toy.cmo pa_fsm.cmo
 	not-ocamlfind preprocess -package $(PACKAGES),camlp5.pr_o \
 	-ppopt -I -ppopt . -ppopt toy.cmo -ppopt pa_fsm.cmo -syntax camlp5o \
 	fsm_test.ml > fsm_test.ppo
+	ocamlfind ocamlc -package $(PACKAGES) \
+	-ppopt -I -ppopt . -ppopt toy.cmo -ppopt pa_fsm.cmo -syntax camlp5o \
+	toy.cmo fsm_test.ml -o fsm_test
 
 .ml.cmo:
 	not-ocamlfind preprocess -package $(PACKAGES),camlp5.pr_r -syntax camlp5o $< > $<.ppo

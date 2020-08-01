@@ -53,3 +53,16 @@ and p_exp3 e1 s =
 
 let parse_expr s = s |> lexer |> p_exp
 
+let eval env =
+  let rec erec = function
+    EConst n -> n
+  | EVar s ->
+    (match List.assoc s env with
+        x -> x
+      | exception Not_found -> failwith (Printf.sprintf "variable %s not found in environment" s)
+    )
+  | EBinop(Plus, e1, e2) -> (erec e1)+(erec e2)
+  | EBinop(Minus, e1, e2) -> (erec e1)-(erec e2)
+  | EBinop(Mult, e1, e2) -> (erec e1)*(erec e2)
+  | EBinop(Div, e1, e2) -> (erec e1)/(erec e2)
+  in erec
