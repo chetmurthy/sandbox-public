@@ -1,8 +1,3 @@
-[A note: I'm not trying to convince any of you reading this to use
-`camlp5` and `pa_ppx`.  I *am* arguing that these sorts of PPX
-rewriters should be easy to implement (all of this code is barely a
-month old) and not the domain of cognoscenti.]
-
 This post is about PPX rewriters, using multiple of them in sequence,
 using one rewriter in implementing others, and getting to something
 .... somewhat surprisingly complex, in simple steps.  All of this has
