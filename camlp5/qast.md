@@ -404,21 +404,21 @@ type tyarg_t =
   { srctype : ctyp;
     dsttype : ctyp;
     raw_dstmodule : longid option
-    [@name dstmodule];
+      [@name dstmodule];
     dstmodule : longid option
-    [@computed longid_of_dstmodule dsttype raw_dstmodule];
+      [@computed longid_of_dstmodule dsttype raw_dstmodule];
     inherit_code : expr option;
     code : expr option;
     custom_branches_code : expr option;
     custom_branches : (lident, case_branch) alist
-    [@computed extract_case_branches custom_branches_code];
+      [@computed extract_case_branches custom_branches_code];
     custom_fields_code : (lident, expr) alist [@default []];
     skip_fields : lident list [@default []];
     subs : (ctyp * ctyp) list [@default []];
     type_vars : string list
-    [@computed compute_type_vars srctype dsttype subs];
+      [@computed compute_type_vars srctype dsttype subs];
     subs_types : ctyp list
-    [@computed compute_subs_types loc subs]
+      [@computed compute_subs_types loc subs]
 }
 [@@deriving params]
 
@@ -435,14 +435,14 @@ type t =
     dispatch_type_name : lident[@name dispatch_type];
     dispatch_table_constructor : lident;
     declared_dispatchers : (lident, Dispatch1.tyarg_t) alist
-    [@default []] [@name dispatchers];
+      [@default []] [@name dispatchers];
     default_dispatchers : default_dispatcher_t list[@default []];
     dispatchers : (lident, Dispatch1.tyarg_t) alist
-    [@computed compute_dispatchers loc type_decls declared_dispatchers default_dispatchers];
+      [@computed compute_dispatchers loc type_decls declared_dispatchers default_dispatchers];
     type_decls : (string * MLast.type_decl) list
-    [@computed type_decls];
+      [@computed type_decls];
     pretty_rewrites : (string * Prettify.t) list
-    [@computed Prettify.mk_from_type_decls type_decls] }
+      [@computed Prettify.mk_from_type_decls type_decls] }
 [@@deriving params {formal_args = {t = [type_decls]}}]
 
 ```
