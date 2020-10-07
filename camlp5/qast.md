@@ -452,7 +452,7 @@ MLast.expr -> t` that performs the entire demarshalling task.  At a
 couple of points, we supply functions to handle custom demarshalling
 operations, but the vast majority of the code (and work) is handled
 automatically.  This is *liberating*: it means that there is no cost
-to be precise in describing the data one needs as input, and no need
+to being precise in describing the data one needs as input, and no need
 to "encode" arguments into easy-to-parse form.  A good comparison is
 with the "@with" syntax of the `ppx_import` PPX rewriter, where it's
 clear that they're shoe-horning types into expression syntax, for want
