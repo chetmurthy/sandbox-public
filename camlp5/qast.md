@@ -203,42 +203,15 @@ Here's the actual code:
 
 The resulting OCaml module will contain two new modules: `OK` (which
 contains a copy of the original AST) and `HC` (which contains the
-hashconsed AST, as well as functions for hash-consing, memoizing, etc).
-
-### Write the Parser
-
-Below is an LL(1) parser for our lambda-terms.  There's nothing special
-going on, except for the `V` symbols, which are how we indicate to the
-parser where anti-quotations are allowed.  The syntax and semantics of
-these parsers is explained in the Camlp5 documentation.
-
-The last line of this parser code defines an entry `term_hashcons_eoi`
-that parses a term, and using the migration code above, promotes it to
-a hashconsed AST value.
+hashconsed AST, as well as functions for hash-consing, memoizing,
+etc).  The hashconsed AST looks like this:
 
 ```
-value term_eoi = Grammar.Entry.create gram "term_eoi";
-value term_hashcons_eoi = Grammar.Entry.create gram "term_hashcons_eoi";
-
-EXTEND
-  GLOBAL: term_eoi term_hashcons_eoi;
-
-  term: [
-    "apply" LEFTA
-    [ l = LIST1 (V (term LEVEL "abs") "term") ->
-      Pcaml.unvala (List.fold_left (fun lhs rhs -> <:vala< App lhs rhs >>) (List.hd l) (List.tl l)) ]
-  | "abs"
-    [ "["; "]" ; e = V (term LEVEL "abs") "term" -> Abs e ]
-  |  "var" [ n = V INT "ref" -> Ref (vala_map int_of_string n)
-    | "(" ; e = SELF ; ")" -> e
-    ]
-  ]
-  ;
-
-  term_eoi: [ [ x = term; EOI -> x ] ];
-  term_hashcons_eoi: [ [ x = term; EOI -> Debruijn_migrate.Inject.inject x ] ];
-
-END;
+    type term_node =
+        Ref of int Ploc.vala
+      | Abs of term Ploc.vala
+      | App of term Ploc.vala * term Ploc.vala
+    and term = term_node hash_consed
 ```
 
 ### Generate functions back-and-forth between "normal" and "hashconsed" versions of the AST
@@ -276,6 +249,42 @@ To invoke the generated code, one writes
 ```
 let dt = make_dt ()
 let inject x = dt.migrate_term dt x
+```
+
+### Write the Parser
+
+Below is an LL(1) parser for our lambda-terms.  There's nothing special
+going on, except for the `V` symbols, which are how we indicate to the
+parser where anti-quotations are allowed.  The syntax and semantics of
+these parsers is explained in the Camlp5 documentation.
+
+The last line of this parser code defines an entry `term_hashcons_eoi`
+that parses a term, and using the migration code above, promotes it to
+a hashconsed AST value.
+
+```
+value term_eoi = Grammar.Entry.create gram "term_eoi";
+value term_hashcons_eoi = Grammar.Entry.create gram "term_hashcons_eoi";
+
+EXTEND
+  GLOBAL: term_eoi term_hashcons_eoi;
+
+  term: [
+    "apply" LEFTA
+    [ l = LIST1 (V (term LEVEL "abs") "term") ->
+      Pcaml.unvala (List.fold_left (fun lhs rhs -> <:vala< App lhs rhs >>) (List.hd l) (List.tl l)) ]
+  | "abs"
+    [ "["; "]" ; e = V (term LEVEL "abs") "term" -> Abs e ]
+  |  "var" [ n = V INT "ref" -> Ref (vala_map int_of_string n)
+    | "(" ; e = SELF ; ")" -> e
+    ]
+  ]
+  ;
+
+  term_eoi: [ [ x = term; EOI -> x ] ];
+  term_hashcons_eoi: [ [ x = term; EOI -> Debruijn_migrate.Inject.inject x ] ];
+
+END;
 ```
 
 ### Generate quotations for the "normal" AST
