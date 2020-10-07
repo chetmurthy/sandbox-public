@@ -39,9 +39,9 @@ described below can be found at `camlp5/pa_ppx_q_ast/tests`.
 A while back in the "Future of PPX" post (
 https://discuss.ocaml.org/t/the-future-of-ppx/3766 ) there was some
 discussion of hash-consing for ASTs, and the complexities of achieving
-it.  I wrote a follow-up post "Hashconsing an AST via PPX" (
+it.  I wrote a reply post "Hashconsing an AST via PPX" (
 https://discuss.ocaml.org/t/hashconsing-an-ast-via-ppx/5558 ) where I
-discussed how one could use a PPX rewriter to automate the task of
+showed how one could use a PPX rewriter to automate the task of
 "re-sharing" an AST when writing a top-down/bottom-up rewriter for an
 AST. (That is, you're walking an AST, making small modifications, but
 most of it stays the same; so in principle, at a node `Add(Mul(e1,e2),
