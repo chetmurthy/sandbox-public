@@ -28,9 +28,11 @@ instead use the surface syntax (hence being more-or-less indifferent
 to whether it's applied to the original or hashconsed version of the
 AST).
 
-All of the code discussed here is available on github at: `camlp5`,
-`camlp5/pa_ppx`, `camlp5/pa_ppx_{migrate,hashcons,q_ast}`.  The
-working examples described can be found at `camlp5/pa_ppx_q_ast/tests`.
+All of the code discussed here is available on github at:
+https://github.com/camlp5 , in projects `camlp5/pa_ppx`,
+`camlp5/pa_ppx_{migrate,hashcons,q_ast}`.  The latter ones are not
+(yet) released, but will be soon.  Working examples described can be
+found at `camlp5/pa_ppx_q_ast/tests`.
 
 # Introduction: the Problem We're Solving
 
