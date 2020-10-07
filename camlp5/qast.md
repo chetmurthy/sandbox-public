@@ -402,50 +402,50 @@ the demarshallers used in these PPX rewriters.  Here is an example of
 the `params` PPX rewriter as used by `pa_ppx_migrate` to generate
 its options demarshaller:
 ```
+type tyarg_t =
+  { srctype : ctyp;
+    dsttype : ctyp;
+    raw_dstmodule : longid option[@name dstmodule];
+    dstmodule :
+      longid option[@computed longid_of_dstmodule dsttype raw_dstmodule];
+    inherit_code : expr option;
+    code : expr option;
+    custom_branches_code : expr option;
+    custom_branches :
+      (lident, case_branch) alist[@computed extract_case_branches custom_branches_code];
+    custom_fields_code : (lident, expr) alist[@default []];
+    skip_fields : lident list[@default []];
+    subs : (ctyp * ctyp) list[@default []];
+    type_vars :
+      string list[@computed compute_type_vars srctype dsttype subs];
+    subs_types : ctyp list[@computed compute_subs_types loc subs] }
+[@@deriving params]
 
-type tyarg_t = {
-  srctype : ctyp
-; dsttype : ctyp
-; raw_dstmodule : option longid [@name dstmodule;]
-; dstmodule : option longid [@computed longid_of_dstmodule dsttype raw_dstmodule;]
-; inherit_code : option expr
-; code : option expr
-; custom_branches_code : option expr 
-; custom_branches : (alist lident case_branch) [@computed extract_case_branches custom_branches_code;]
-; custom_fields_code : (alist lident expr) [@default [];]
-; skip_fields : list lident [@default [];]
-; subs : list (ctyp * ctyp) [@default [];]
-; type_vars : list string [@computed compute_type_vars srctype dsttype subs;]
-; subs_types : list ctyp [@computed compute_subs_types loc subs;]
-} [@@deriving params;] ;
+type default_dispatcher_t =
+  { srcmod : longid;
+    dstmod : longid;
+    types : lident list;
+    inherit_code : (lident, expr) alist[@default []] }
+[@@deriving params]
 
-type default_dispatcher_t = {
-  srcmod : longid
-; dstmod : longid
-; types : list lident
-; inherit_code : (alist lident expr) [@default [];]
-} [@@deriving params;]
-;
-
-type t = {
-  inherit_type : option ctyp
-; dispatch_type_name : lident [@name dispatch_type;]
-; dispatch_table_constructor : lident
-; declared_dispatchers : (alist lident tyarg_t) [@default [];][@name dispatchers;]
-; default_dispatchers : list default_dispatcher_t [@default [];]
-; dispatchers : (alist lident tyarg_t) [@computed compute_dispatchers loc type_decls declared_dispatchers default_dispatchers;]
-; type_decls : list (string * MLast.type_decl) [@computed type_decls;]
-; pretty_rewrites : list (string * Prettify.t) [@computed Prettify.mk_from_type_decls type_decls;]
-} [@@deriving params {
-    formal_args = {
-      t = [ type_decls ]
-    }
-  };]
-;
+type t =
+  { inherit_type : ctyp option;
+    dispatch_type_name : lident[@name dispatch_type];
+    dispatch_table_constructor : lident;
+    declared_dispatchers :
+      (lident, Dispatch1.tyarg_t) alist[@default []] [@name dispatchers];
+    default_dispatchers : default_dispatcher_t list[@default []];
+    dispatchers :
+      (lident, Dispatch1.tyarg_t) alist[@computed compute_dispatchers loc type_decls declared_dispatchers
+        default_dispatchers];
+    type_decls : (string * MLast.type_decl) list[@computed type_decls];
+    pretty_rewrites :
+      (string * Prettify.t) list[@computed Prettify.mk_from_type_decls type_decls] }
+[@@deriving params {formal_args = {t = [type_decls]}}]
 
 ```
 
-This generates a function `params : list (string * MLast.type_decl) ->
+This generates a function `params : (string * MLast.type_decl) list ->
 MLast.expr -> t` that performs the entire demarshalling task.  At a
 couple of points, we supply functions to handle custom demarshalling
 operations, but the vast majority of the code (and work) is handled
