@@ -30,7 +30,7 @@ AST).
 
 All of the code discussed here is available on github at:
 https://github.com/camlp5 , in projects `camlp5/pa_ppx`,
-`camlp5/pa_ppx_{migrate,hashcons,q_ast}`.  The latter ones are not
+`camlp5/pa_ppx_{migrate,hashcons,q_ast,params}`.  The latter ones are not
 (yet) released, but will be soon.  Working code for everything
 described below can be found at `camlp5/pa_ppx_q_ast/tests`.
 
