@@ -216,7 +216,12 @@ etc).  The hashconsed AST looks like this:
 
 ### Generate functions back-and-forth between "normal" and "hashconsed" versions of the AST
 
-Here's the input to a `pa_ppx_migrate` PPX rewriter, that generates migration functions from the "normal" (`OK`) to the "hashconsed" (`HC`) AST.  The reverse direction isn't much different.
+Here's the input to a `pa_ppx_migrate` PPX rewriter, that generates
+migration functions from the "normal" (`OK`) to the "hashconsed"
+(`HC`) AST.  The reverse direction isn't much different.  Notice that
+we don't actually write any migration code, except for external types (`vala`).
+In much-more-complicated examples, the succinctness of this method over the actual
+code can be quite significant.
 
 ```
 [%%import: Debruijn_hashcons.OK.term]
@@ -245,7 +250,9 @@ Here's the input to a `pa_ppx_migrate` PPX rewriter, that generates migration fu
     }
 ]
 ```
+
 To invoke the generated code, one writes
+
 ```
 let dt = make_dt ()
 let inject x = dt.migrate_term dt x
