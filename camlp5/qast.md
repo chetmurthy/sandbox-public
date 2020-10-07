@@ -1,3 +1,7 @@
+[A note: I'm not trying to convince any of you reading this to use
+`camlp5` and `pa_ppx`.  I *am* arguing that these sorts of PPX
+rewriters should be easy to implement (all of this code is barely a
+month old) and not the domain of cognoscenti.]
 
 This post is about PPX rewriters, using multiple of them in sequence,
 using one rewriter in implementing others, and getting to something
@@ -40,11 +44,11 @@ discussed how one could use a PPX rewriter to automate the task of
 AST. (That is, you're walking an AST, making small modifications, but
 most of it stays the same; so in principle, at a node `Add(Mul(e1,e2),
 e3)` when rewriting `e3` actually changes it visibly, but `Mul(e1,e2)`
-doesn't, we might want that the result value's first subtree is shared
-with that of the input's first subtree.)  I called this "rehascons"ing
-(admittedly not a great name).  The idea being, we're not trying to
-hash-cons, but only to restore whatever sharing was there originally,
-to whatever extent that's possible.
+doesn't, we might want the output value's first subtree to be
+pointer-equal to the input's first subtree.)  I called this
+"rehashcons"ing (admittedly not a great name).  The idea being, we're
+not trying to hash-cons, but only to restore whatever sharing was
+there originally, to whatever extent that's possible.
 
 But this is neither sufficient in all cases, nor real hash-consing.
 The problem with hash-consing is::
@@ -67,12 +71,14 @@ C. And then, when it comes to writing expressions and patterns over
    `{it=....}` to patterns.
    
 It's all a bit of a tedious bother, when what we *want* is to just
-manipulate the hashconsed data-type as if it were normal type, and
-have the messy bits filled-in for us.
+manipulate the hashconsed data-type as if it were the "normal" type,
+and have the messy bits filled-in for us.
 
 This post is about how to achieve that.
 
 # A plan for how to achieve reasonably transparent hash-consing
+
+Let's first map out the plan of attack:
 
 1. Suppose that we already have a syntax for writing expressions and
    patterns over our AST type, which is processed by a PPX rewriter
@@ -118,15 +124,10 @@ This post is about how to achieve that.
    of its "params", and from that generate the function that will
    convert expression-ASTs to that type.
 
-The implementation of the above, is what I will describe in the rest of
-this note.  I've applied it to a couple of simple examples
-(s-expressions and deBruijn lambda-terms) and am in-process of
-applying it to Camlp5's own AST type.
-
-A note: I'm not trying to convince any of you reading this to use
-`camlp5` and `pa_ppx`.  I *am* arguing that these sorts of PPX
-rewriters should be easy to implement (all of this code is barely a
-month old) and not the domain of cognoscenti.
+The implementation of all of the above, is what I will describe in the
+rest of this note.  I've applied it to a couple of simple examples
+(s-expressions and deBruijn lambda-terms) and also to the entire OCaml
+AST in Camlp5.
 
 # A Worked Example: deBruijn Lambda Terms
 
