@@ -86,8 +86,7 @@ Let's first map out the plan of attack:
    
    Then (assuming that we insert hash-consing bits in well-understood
    locations *in the AST type-definition*) we could instruct this
-   rewriter to insert bits in the corresponding places in *in
-   expressions/patterns*.
+   rewriter to insert bits in the corresponding places in *expressions/patterns*.
    
 2. Suppose we have a PPX rewriter that will solve problems #A,#B from
    above: given a "normal" type and some succinct specification of
@@ -125,9 +124,11 @@ Let's first map out the plan of attack:
    convert expression-ASTs to that type.
 
 The implementation of all of the above, is what I will describe in the
-rest of this note.  I've applied it to a couple of simple examples
-(s-expressions and deBruijn lambda-terms) and also to the entire OCaml
-AST in Camlp5.
+rest of this note.  I've applied it to
+
+* (simple) s-expressions
+* (simple) deBruijn lambda-terms
+* (complex and comprehensive) the entire OCaml AST in Camlp5.
 
 # A Worked Example: deBruijn Lambda Terms
 
