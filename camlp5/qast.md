@@ -381,7 +381,7 @@ let rec copy = function
 I've also applied this same methodology to the entire OCaml AST in
 Camlp5 (for which there is a parser, as part of Camlp5) and verified
 that the quotations thus generated pass the same tests as the
-hand-written quotations provided as part of Camlp5.
+hand-implemented quotations provided as part of Camlp5.
 
 The quotations of Camlp5 are substantial, and cover almost all of the
 OCaml language.  I believe that this means it is possible to both
@@ -445,13 +445,13 @@ type t = {
 
 ```
 
-This generates a function `params : MLast.expr -> t` that performs the
-entire demarshalling task.  At a couple of points, we supply functions
-to handle custom demarshalling operations, but the vast majority of
-the code (and work) is handled automatically.  This is *liberating*:
-it means that there is no cost to be precise in describing the data
-one needs as input, and no need to "encode" arguments into
-easy-to-parse form.  A good comparison is with the "@with" syntax of
-the `ppx_import` PPX rewriter, where it's clear that they're
-shoe-horning types into expression syntax, for want of a nicer syntax
-that is still easily to manipulate.
+This generates a function `params : list (string * MLast.type_decl) ->
+MLast.expr -> t` that performs the entire demarshalling task.  At a
+couple of points, we supply functions to handle custom demarshalling
+operations, but the vast majority of the code (and work) is handled
+automatically.  This is *liberating*: it means that there is no cost
+to be precise in describing the data one needs as input, and no need
+to "encode" arguments into easy-to-parse form.  A good comparison is
+with the "@with" syntax of the `ppx_import` PPX rewriter, where it's
+clear that they're shoe-horning types into expression syntax, for want
+of a nicer syntax that is still easily to manipulate.
