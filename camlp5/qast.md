@@ -2,7 +2,7 @@
 This post is about PPX rewriters, using multiple of them in sequence,
 using one rewriter in implementing others, and getting to something
 .... somewhat surprisingly complex, in simple steps.  All of this has
-been doing using PPX rewriters based on `camlp5` (and `pa_ppx`), but
+been done using PPX rewriters based on `camlp5` (and `pa_ppx`), but
 should in principle be doable on `ppxlib` (the standard support
 infrastructure for PPX rewriters).
 
@@ -10,14 +10,19 @@ I should note that the portions regarding hash-consing are all a
 pretty faithful re-implementation and mechanization of the paper of
 Filliatre and Conchon:
 [Type-Safe Modular Hash-Consing](https://www.lri.fr/~filliatr/ftp/publis/hash-consing2.pdf).
+All errors are mine, though.
 
 TL;DR This post describes how, starting with an AST type and a parser
-for it, we can more-or-less automatically generate hash-consed
-versions of the AST, functions back-and-forth, and surface-syntax
-"quotation" expanders for both types, so that code doesn't need to
-manipulate the AST directly, but can instead use the surface syntax
-(hence being more-or-less indifferent to whether it's applied to the
-original or hashconsed version of the AST).
+for it, we can more-or-less automatically generate
+
+* hash-consed versions of the AST,
+* functions back-and-forth,
+* and surface-syntax "quotation" expanders for both types
+
+so that code doesn't need to manipulate the AST directly, but can
+instead use the surface syntax (hence being more-or-less indifferent
+to whether it's applied to the original or hashconsed version of the
+AST).
 
 All of the code discussed here is available on github at: `camlp5`,
 `camlp5/pa_ppx`, `camlp5/pa_ppx_{migrate,hashcons,q_ast}`.  The
