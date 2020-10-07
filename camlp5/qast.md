@@ -162,12 +162,9 @@ Sylvain Conchon, from their paper
 In short, we specify a few module-names, equality and hash functions
 for external type-constructors (which necessarily cannot participate
 in hash-consing) and the type-signatures of memo-izers we wish
-generated.  In this case, we'd like to memoize functions of the following types:
-```
-term -> 'a
-int -> term -> 'a
-term -> term -> 'a
-```
+generated.  The rewriter generates efficient hash-constructors and
+hash/equality-functions: consult the paper for details.
+
 
 Here's the actual code:
 
@@ -396,52 +393,56 @@ I've shown three different PPX rewriters (`migrate`, `hashcons`, and
 `q_ast`) and in some of their invocations, there are nontrivial OCaml
 expressions to supply as options.  Writing the code that converts
 these options (OCaml expressions) into values of meaningful types (for
-the rewriter code) is onerous, time-consuming, and error-prone: it is
+the rewriter code) is unutterably boring, time-consuming, and error-prone: it is
 effectively a *demarshalling* problem.  So I wrote a PPX rewriter,
 that automates this task, and in fact that is what is used to generate
-the demarshallers used in these PPX rewriters.  Here is an example of
+the demarshallers used in these PPX rewriters.  Here is an example:
 the `params` PPX rewriter as used by `pa_ppx_migrate` to generate
 its options demarshaller:
 ```
 type tyarg_t =
   { srctype : ctyp;
     dsttype : ctyp;
-    raw_dstmodule : longid option[@name dstmodule];
-    dstmodule :
-      longid option[@computed longid_of_dstmodule dsttype raw_dstmodule];
+    raw_dstmodule : longid option
+    [@name dstmodule];
+    dstmodule : longid option
+    [@computed longid_of_dstmodule dsttype raw_dstmodule];
     inherit_code : expr option;
     code : expr option;
     custom_branches_code : expr option;
-    custom_branches :
-      (lident, case_branch) alist[@computed extract_case_branches custom_branches_code];
-    custom_fields_code : (lident, expr) alist[@default []];
-    skip_fields : lident list[@default []];
-    subs : (ctyp * ctyp) list[@default []];
-    type_vars :
-      string list[@computed compute_type_vars srctype dsttype subs];
-    subs_types : ctyp list[@computed compute_subs_types loc subs] }
+    custom_branches : (lident, case_branch) alist
+    [@computed extract_case_branches custom_branches_code];
+    custom_fields_code : (lident, expr) alist [@default []];
+    skip_fields : lident list [@default []];
+    subs : (ctyp * ctyp) list [@default []];
+    type_vars : string list
+    [@computed compute_type_vars srctype dsttype subs];
+    subs_types : ctyp list
+    [@computed compute_subs_types loc subs]
+}
 [@@deriving params]
 
 type default_dispatcher_t =
   { srcmod : longid;
     dstmod : longid;
     types : lident list;
-    inherit_code : (lident, expr) alist[@default []] }
+    inherit_code : (lident, expr) alist[@default []]
+  }
 [@@deriving params]
 
 type t =
   { inherit_type : ctyp option;
     dispatch_type_name : lident[@name dispatch_type];
     dispatch_table_constructor : lident;
-    declared_dispatchers :
-      (lident, Dispatch1.tyarg_t) alist[@default []] [@name dispatchers];
+    declared_dispatchers : (lident, Dispatch1.tyarg_t) alist
+    [@default []] [@name dispatchers];
     default_dispatchers : default_dispatcher_t list[@default []];
-    dispatchers :
-      (lident, Dispatch1.tyarg_t) alist[@computed compute_dispatchers loc type_decls declared_dispatchers
-        default_dispatchers];
-    type_decls : (string * MLast.type_decl) list[@computed type_decls];
-    pretty_rewrites :
-      (string * Prettify.t) list[@computed Prettify.mk_from_type_decls type_decls] }
+    dispatchers : (lident, Dispatch1.tyarg_t) alist
+    [@computed compute_dispatchers loc type_decls declared_dispatchers default_dispatchers];
+    type_decls : (string * MLast.type_decl) list
+    [@computed type_decls];
+    pretty_rewrites : (string * Prettify.t) list
+    [@computed Prettify.mk_from_type_decls type_decls] }
 [@@deriving params {formal_args = {t = [type_decls]}}]
 
 ```
