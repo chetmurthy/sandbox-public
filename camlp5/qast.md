@@ -367,3 +367,69 @@ provide full hash-consing support for a very complex AST type, and
 full quotation support both for the AST type, and for its
 automatically-generated hashconsed variant.
 
+# Appendix: Parameter-parsing for PPX Rewriters
+
+I've shown three different PPX rewriters (`migrate`, `hashcons`, and
+`q_ast`) and in some of their invocations, there are nontrivial OCaml
+expressions to supply as options.  Writing the code that converts
+these options (OCaml expressions) into values of meaningful types (for
+the rewriter code) is onerous, time-consuming, and error-prone: it is
+effectively a *demarshalling* problem.  So I wrote a PPX rewriter,
+that automates this task, and in fact that is what is used to generate
+the demarshallers used in these PPX rewriters.  Here is an example of
+the `params` PPX rewriter as used by `pa_ppx_migrate` to generate
+its options demarshaller:
+```
+
+type tyarg_t = {
+  srctype : ctyp
+; dsttype : ctyp
+; raw_dstmodule : option longid [@name dstmodule;]
+; dstmodule : option longid [@computed longid_of_dstmodule dsttype raw_dstmodule;]
+; inherit_code : option expr
+; code : option expr
+; custom_branches_code : option expr 
+; custom_branches : (alist lident case_branch) [@computed extract_case_branches custom_branches_code;]
+; custom_fields_code : (alist lident expr) [@default [];]
+; skip_fields : list lident [@default [];]
+; subs : list (ctyp * ctyp) [@default [];]
+; type_vars : list string [@computed compute_type_vars srctype dsttype subs;]
+; subs_types : list ctyp [@computed compute_subs_types loc subs;]
+} [@@deriving params;] ;
+
+type default_dispatcher_t = {
+  srcmod : longid
+; dstmod : longid
+; types : list lident
+; inherit_code : (alist lident expr) [@default [];]
+} [@@deriving params;]
+;
+
+type t = {
+  inherit_type : option ctyp
+; dispatch_type_name : lident [@name dispatch_type;]
+; dispatch_table_constructor : lident
+; declared_dispatchers : (alist lident tyarg_t) [@default [];][@name dispatchers;]
+; default_dispatchers : list default_dispatcher_t [@default [];]
+; dispatchers : (alist lident tyarg_t) [@computed compute_dispatchers loc type_decls declared_dispatchers default_dispatchers;]
+; type_decls : list (string * MLast.type_decl) [@computed type_decls;]
+; pretty_rewrites : list (string * Prettify.t) [@computed Prettify.mk_from_type_decls type_decls;]
+} [@@deriving params {
+    formal_args = {
+      t = [ type_decls ]
+    }
+  };]
+;
+
+```
+
+This generates a function `params : MLast.expr -> t` that performs the
+entire demarshalling task.  At a couple of points, we supply functions
+to handle custom demarshalling operations, but the vast majority of
+the code (and work) is handled automatically.  This is *liberating*:
+it means that there is no cost to be precise in describing the data
+one needs as input, and no need to "encode" arguments into
+easy-to-parse form.  A good comparison is with the "@with" syntax of
+the `ppx_import` PPX rewriter, where it's clear that they're
+shoe-horning types into expression syntax, for want of a nicer syntax
+that is still easily to manipulate.
