@@ -68,11 +68,11 @@ NOTE: there is a nuance here that I'll address at the end of ths post
 in the section "Appendix B: Types with and without `vala`".
 
 Let's suppose we want to write the function `atoms : sexp -> string
-list` that returns the list of `Atom`s at the leaves of the
-s-expression.  The code is easy enough (just rotate left-child
-cons-nodes to the right, until we get an atom (or Nil) and then move
-on to the cdr.  This is a good example to consider, because it
-requires multi-level pattern-matching and multi-level
+list` that returns the list of `string` (those wrapped by `Atom`) at the
+leaves of the s-expression.  The code is easy enough (just rotate
+left-child cons-nodes to the right, until we get an atom (or Nil) and
+then move on to the cdr.  This is a good example to consider, because
+it requires multi-level pattern-matching and multi-level
 constructor-expressions.  So the introduction of meaningless
 bureaucracy will be palpable.
 
@@ -161,9 +161,9 @@ most of it stays the same; so in principle, at a node `Add(Mul(e1,e2),
 e3)` when rewriting `e3` actually changes it visibly, but `Mul(e1,e2)`
 doesn't, we might want the output value's first subtree to be
 pointer-equal to the input's first subtree.)  I called this
-"rehashcons"ing (admittedly not a great name).  The idea being, we're
-not trying to hash-cons, but only to restore whatever sharing was
-there originally, to whatever extent that's possible.
+"rehashcons"ing (admittedly not a great name).  The idea being,
+`rehashcons` is not trying to hash-cons, but only to restore whatever
+sharing was there originally, to whatever extent that's possible.
 
 But this is neither sufficient in all cases, nor real hash-consing.
 The problem with hash-consing is::
@@ -171,7 +171,7 @@ The problem with hash-consing is::
 A. If you start with an AST type that doesn't have the various bits
    needed for hash-consing (at a minimum, a type `'a node = { it : 'a
    ; hashcode : int }` and its use at each spot where we want to
-   hash-cons) then you have *produce a new AST type* with those bits
+   hash-cons) then you have to first *produce a new AST type* with those bits
    inserted.  Let's call these the "normal" and "hashconsed" ASTs.
    
 B. You have to write tons of boilerplate code: first, to map
@@ -239,12 +239,13 @@ rest of this note.  I've applied it to
 
 * (simple) s-expressions
 * (simple) deBruijn lambda-terms
+* (simple) named-variable lambda-terms
 * (complex and comprehensive) the entire OCaml AST in Camlp5.
 
 # A Worked Example: s-expressions.
 
 In this section, I'll work thru how to apply the ideas above,
-step-by-step, to deBruijn lambda-terms.
+step-by-step, to s-expressions.
 
 ### 0. Write the AST type (without antiquotations)
 
