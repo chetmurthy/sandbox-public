@@ -585,16 +585,27 @@ type sexp =
 
 If we want to provide a `ppx_metaquot`-like facility for this type,
 perhaps we can overload the meaning of the strings in atoms.  So the
-s-expression `( _A foo bar fozz)` could mean an s-expression with a
-single meta-variable, `_A`.  But this meta-variable is necessarily a
-variable that can only denote an s-expression, and not a string.  More
-generally, in an AST type if metavariables are merely overloaded
-variables, anyplace that a variable cannot appear, cannot be subject
-to meta-variable-based pattern-matching/substitution.  So it's not
-possible to match on the list of types or expressions in a tuple
-type/expression, nor the list of branches in a match-with.  And on and
-on.  This is why the version of the `sexp` type with antiquotation
-markers
+s-expression
+
+```
+( _A . foo )
+```
+
+that expands to
+
+```
+Cons(Atom "_A", Atom "foo")
+```
+
+could mean an s-expression with a single meta-variable, `_A`.  But
+this meta-variable is necessarily a variable that can only denote an
+s-expression, and not a string.  More generally, in an AST type if
+metavariables are merely overloaded variables, anyplace that a
+variable cannot appear, cannot be subject to meta-variable-based
+pattern-matching/substitution.  So it's not possible to match on the
+list of types or expressions in a tuple type/expression, nor the list
+of branches in a match-with.  And on and on.  This is why the version
+of the `sexp` type with antiquotation markers
 
 ```
 type sexp =
