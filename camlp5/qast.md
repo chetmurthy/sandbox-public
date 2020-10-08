@@ -25,9 +25,10 @@ AST).
 
 All of the code discussed here is available on github at:
 https://github.com/camlp5 , in projects `camlp5/pa_ppx`,
-`camlp5/pa_ppx_{migrate,hashcons,q_ast,params}`.  The latter ones are not
-(yet) released, but will be soon.  Working code for everything
-described below can be found at `camlp5/pa_ppx_q_ast/tests`.
+`camlp5/pa_ppx_{migrate,hashcons,q_ast,params}`.  The latter ones are
+not (yet) released, but will be soon.  Working code for everything
+described below can be found at `camlp5/pa_ppx_q_ast/tests`, in the
+directories `sexp_example` and `eg_sexp_example`.
 
 # Motivation (a Concrete Example)
 
@@ -84,7 +85,7 @@ let rec atoms =
 ```
 
 
-and the code is
+and the hashconsed version is
 
 ```
     let rec atoms =
@@ -129,12 +130,18 @@ can change the code that is generated, and if the quotation-expander
 is generated from the type definition, it's not actually any work for
 the programmer to achieve this.
 
+NOTE: Unlike with `ppx_metaquot`, the antiquotations can be placed in
+nearly-arbitrary positions: there is no requirement that they
+correspond to variable-names or identifiers in the OCaml AST: indeed,
+our running example will *not* be the OCaml AST, even though all of
+this machinery has been applied-to the OCaml AST successfully.
+
 In this post I'll walk you thru how to achieve this goal: building up
 the machinery, step-by-step, to allow one to write basically arbitrary
 expressions in your AST's surface syntax, and automatically get either
 "normal' (no hash-consing) or "hashconsed" patterns & expressions.
 
-# Introduction to the Problem
+# A High-Level Plan of Attack
 
 A while back in the "Future of PPX" post (
 https://discuss.ocaml.org/t/the-future-of-ppx/3766 ) there was some
@@ -182,38 +189,34 @@ This post is about how to achieve that.
 
 Let's first map out the plan of attack:
 
-1. Suppose that we already have a syntax for writing expressions and
-   patterns over our AST type, which is processed by a PPX rewriter
-   (or equivalent) to produce the actual OCaml expressions/patterns.
-   
-   Then (assuming that we insert hash-consing bits in well-understood
-   locations *in the AST type-definition*) we could instruct this
-   rewriter to insert bits in the corresponding places in *expressions/patterns*.
-   
-2. Suppose we have a PPX rewriter that will solve problems #A,#B from
-   above: given a "normal" type and some succinct specification of
-   where hash-consing should be applied (or maybe better, where it
-   should *not* be applied) it will generate the hashconsed type and
-   all the necessary boilerplate code for constructors, as well as for
-   memoizing functions of various (also-specified) types.
+0. Start with an AST type (or types) for our language, and a parser
+   (in this case, written using Camlp5's grammar machinery).
 
-3. Then suppose we have a PPX rewriter that, given succinct
-   specification of two families of types, can generate a
-   recursive-walk "map" function (in the style of `ppx_deriving.map`)
-   from one type-family to the other.  Where the two type-families
-   differ, some succinct specification can be given to guide the
-   "migration" rewriter on code to generate.
+1. Add to the AST type some indications for where antiquotations may
+   go, and modify the parser to parse these antiquotations.  We'll
+   call this the "normal" AST type.  Note that this is the version
+   *with* antiquotation markers.
    
-4. Finally, for step #1, suppose that we can *generate* the rewriter
-   that is used there, again from the type-declarations of normal and
-   hashconsed types.
+2. [`pa_ppx_hashcons`] Generate a *hashconsed version of the AST type* from the
+   "normal" AST type.
 
-5. In implementing the above, we're describing complex tasks, so it's
-   possible that when not automatically inferrable from types, the
-   "hints" we might need to give will be complex.  It would be nice if
-   there were a way to automatically generate code to parse such
-   specifications.  If we were writing some other application, we
-   might want to use `ppx_deriving.yojson` (or our equivalent,
+3. [`pa_ppx_migrate`] Generate functions back-and-forth between "normal" and "hashconsed"
+   versions of the AST type.  So we're hashconsing the version *with*
+   antiquotation markers.  We could hashcons the version without
+   antiquotation markers, and everything here would still work out
+   ... but it would be more complicated to explain.
+
+4. [`pa_ppx_q_ast`] From each of the "normal" and "hashconsed" AST types, generate
+   functions that can take values of the type and generate OCaml code
+   for patterns and expressions that correspond to those values.
+
+5. [`pa_ppx.deriving_plugins.params`] In implementing the above, we're
+   describing complex tasks, so it's possible that when not
+   automatically inferrable from types, the "hints" we might need to
+   give will be complex.  It would be nice if there were a way to
+   automatically generate code to parse such specifications.  If we
+   were writing some other application, we might want to use
+   `ppx_deriving.yojson` (or our equivalent,
    `pa_ppx.deriving_plugins.yojson`) and write our specification in
    JSON.  But since we're writing a PPX rewriter, the specification
    will come in the payload of a PPX attribute/extension.  Since our
@@ -232,12 +235,207 @@ rest of this note.  I've applied it to
 * (simple) deBruijn lambda-terms
 * (complex and comprehensive) the entire OCaml AST in Camlp5.
 
-# A Worked Example: deBruijn Lambda Terms
+# A Worked Example: s-expressions.
 
 In this section, I'll work thru how to apply the ideas above,
 step-by-step, to deBruijn lambda-terms.
 
-### Write the AST types (with antiquotation markers)
+### 0. Write the AST type (without antiquotations)
+
+Copying from above
+
+```
+type sexp =
+    Atom of string
+  | Cons of sexp * sexp
+  | Nil
+```
+
+### 1. Add antiquotation markers and add a parser
+
+```
+type sexp =
+    Atom of (string vala)
+  | Cons of (sexp vala) * (sexp vala)
+  | Nil
+```
+
+the type ` 'a vala` is a Camlp5 type-constructor.  It contains either
+a value of type ` 'a`, or an antiquotation.  Here's the parser:
+
+```
+  sexp: [
+    [
+      a = V atom "atom" -> sexp_atom a
+    | "(" ; l1 = LIST1 v_sexp ; opt_e2 = OPT [ "." ; e2 = v_sexp -> e2 ] ; ")" ->
+      match opt_e2 with [
+        None -> List.fold_right (fun vse1 se2 -> Sexp.Cons vse1 <:vala< se2 >>) l1 sexp_nil
+      | Some ve2 ->
+         let (last, l1) = sep_last l1 in
+         List.fold_right (fun vse1 se2 -> Sexp.Cons vse1 <:vala< se2 >>) l1
+           (Sexp.Cons last ve2)
+      ]
+    | "(" ; ")" ->
+        sexp_nil
+    ]
+  ]
+  ;
+
+  v_sexp: [[ v = V sexp "exp" -> v ]];
+
+  atom: [[ i = LIDENT -> i | i = UIDENT -> i | i = INT -> i ]] ;
+
+  sexp_eoi: [ [ x = sexp; EOI -> x ] ];
+```
+
+This is an LL(1) grammar, interpreted by Camlp5, and the marker for
+antiquotations is "V".  Full details of the grammar language can be
+found in the Camlp5 documentation.
+
+### 2. Generate a Hashconsed version of the AST type
+
+This is the input to the `camlp5/pa_ppx_hashcons` PPX rewriter.  This
+rewriter implements the method of Jean-Christophe Filliatre and
+Sylvain Conchon, from their paper
+[Type-Safe Modular Hash-Consing](https://www.lri.fr/~filliatr/ftp/publis/hash-consing2.pdf).
+In short, we specify a few module-names, equality and hash functions
+for external type-constructors (which necessarily cannot participate
+in hash-consing) and the type-signatures of memo-izers we wish
+generated.  The rewriter generates efficient hash-constructors and
+hash/equality-functions: consult the paper for details.
+
+
+Here's the actual code:
+
+```
+[%%import: Sexp.sexp]
+[@@deriving hashcons { hashconsed_module_name = HC
+                     ; normal_module_name = OK
+                     ; external_types = {
+                         Ploc.vala = {
+                           preeq = (fun f x y -> match (x,y) with
+                               (Ploc.VaAnt s1, Ploc.VaAnt s2) -> s1=s2
+                             | (Ploc.VaVal v1, Ploc.VaVal v2) -> f v1 v2
+                             )
+                         ; prehash = (fun f x -> match x with
+                             Ploc.VaAnt s -> Hashtbl.hash s
+                           | Ploc.VaVal v -> f v
+                           )
+                         }
+                       }
+                     ; pertype_customization = {
+                         sexp = {
+                           hashcons_constructor = sexp
+                         }
+                       }
+                     }]
+```
+
+The resulting OCaml module will contain two new modules: `OK` (which
+contains a copy of the original AST) and `HC` (which contains the
+hashconsed AST, as well as functions for hash-consing, memoizing,
+etc).  The hashconsed AST type is as described in the previous
+section.
+
+### Generate functions back-and-forth between "normal" and "hashconsed" versions of the AST type.
+
+To generate functions back-and-forth between the two versions of the
+AST type, we use the `pa_ppx_migrate` PPX rewriter. Here is the input
+for generating the function from the "normal" (`OK`) to the
+"hashconsed" (`HC`) AST.  The reverse direction isn't much different.
+Notice that we don't actually write any migration code, except for
+external types (`vala`).  In much-more-complicated examples, the
+succinctness of this method over the actual code can be quite
+significant.  It has been applied to the 10 versions of the OCaml AST,
+and the succinctness gains there are significant.
+
+```
+[%%import: Sexp_hashcons.OK.sexp]
+[@@deriving migrate
+    { dispatch_type = dispatch_table_t
+    ; dispatch_table_constructor = make_dt
+    ; dispatchers = {
+        migrate_vala = {
+          srctype = [%typ: 'a Ploc.vala]
+        ; dsttype = [%typ: 'b Ploc.vala]
+        ; subs = [ ([%typ: 'a], [%typ: 'b]) ]
+        ; code = _migrate_vala
+        }
+      ; migrate_sexp_node = {
+          srctype = [%typ: sexp_node]
+        ; dsttype = [%typ: Sexp_hashcons.HC.sexp_node]
+        }
+      ; migrate_sexp = {
+          srctype = [%typ: sexp]
+        ; dsttype = [%typ: Sexp_hashcons.HC.sexp]
+        ; code = (fun __dt__ x ->
+            Sexp_hashcons.HC.sexp (__dt__.migrate_sexp_node __dt__ x)
+          )
+        }
+      }
+    }
+]
+```
+
+### 4. Generate functions to map (parsed) values to OCaml expressions/patterns
+
+We use the `pa_ppx_q_ast` PPX rewriter, and invoke it twice: once with
+the "normal" AST type (`Sexp.sexp`) and once with the hashconsed type
+(`Sexp_hashcons.HC.sexp`).  The two quotation-expanders are named,
+respectively, "sexp" and "hcsexp" (the names are chosen only for this
+presentation and are not significant).
+
+```
+module Regular = struct
+type sexp = [%import: Sexp.sexp]
+[@@deriving q_ast { data_source_module = Sexp }]
+
+Quotation.add "sexp"
+  (apply_entry Pa_sexp.sexp_eoi E.sexp P.sexp)
+end
+
+module Hashcons = struct
+
+[%%import: Sexp_hashcons.HC.sexp]
+[@@deriving q_ast {
+    data_source_module = Sexp_hashcons.HC
+  ; quotation_source_module = Sexp_migrate.FromHC
+  ; hashconsed = true
+  }]
+
+Quotation.add "hcsexp"
+  (apply_entry Pa_sexp.sexp_hashcons_eoi E.sexp P.sexp)
+end
+
+```
+
+### Putting it all together
+
+So: we start with an AST type and a parser, to which antiquotation
+markers have been added.  We generate a hashconsed version of the AST
+type, and functions back-and-forth to the "normal" version of the
+type.  Since we have a parser for the "normal" version, we now have a
+parser for the "hashconsed" version.
+
+The fancy bit is that Camlp5 has built-in machinery to map values of
+types in the OCaml AST of Camlp5 (which is a different recursive type,
+but more-or-less equivalent to the official OCaml AST) to expressions
+and patterns that correspond to those values.  So the actual AST
+*value* corresponding to `x + 1` can be mapped to either an expression
+(that when evaluated, produces that value) or a pattern (that matches
+that value).  But since our AST type contains antiquotation markers,
+the AST value corresponding to `$x$ + 1` can *also* be mapped to an
+expression/pattern, only this time, with OCaml variable `x` as the
+first argument to `(+)`.
+
+The `pa_ppx_q_ast` PPX rewriter generalizes this and makes it possible
+to apply to any AST type (and also to apply to the OCaml AST type in
+Camlp5, so nothing has been lost).
+
+
+
+
+
 
 Here is the type definition for our AST.
 
