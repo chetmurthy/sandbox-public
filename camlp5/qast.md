@@ -29,12 +29,13 @@ https://github.com/camlp5 , in projects `camlp5/pa_ppx`,
 (yet) released, but will be soon.  Working code for everything
 described below can be found at `camlp5/pa_ppx_q_ast/tests`.
 
-# Motivation
+# Motivation (a Concrete Example)
 
-I think the ability to transparently introduce hash-consing into a
-complex collection of AST types needs no argument.  The ability to use
+The ability to transparently introduce hash-consing into a complex
+collection of AST types should need no argument.  The ability to use
 "quotations" over such an AST type might need some motivation.  So
 consider a type of s-expressions, viz
+
 ```
 type sexp =
     Atom of string
@@ -42,28 +43,8 @@ type sexp =
   | Nil
 ```
 
-with the obvious parsing that we're all used-to from LISP/Scheme.
-Let's suppose we want to write the function `atoms : sexp -> string
-list` that returns the list `Atom`s at the leaves of the s-expression.
-The code is easy enough (just rotate left-child cons-nodes until we
-get an atom (or Nil) and then move on to the cdr.  This is a good
-example to consider, because it requires multi-level pattern-matching
-and multi-level constructor-expressions.  So the introduction of
-meaningless bureaucracy will be palpable.
-
-```
-let rec atoms =
-  function
-    Nil -> []
-  | Atom a -> [a]
-  | Cons(Cons(caar, cdar), cdr) ->
-      atoms (Cons(caar, Cons (cdar, cdr)))
-  | Cons(Nil, cdr) -> atoms cdr
-  | Cons(Atom a, cdr) -> a :: atoms cdr
-
-```
-
-The hashconsed version of the type is
+with the obvious parsing that we're all used-to from LISP/Scheme.  The
+hashconsed version of the type is
 
 ```
     type sexp_node =
@@ -80,6 +61,28 @@ type +'a hash_consed = private {
   tag : int;
   node : 'a }
 ```
+
+Let's suppose we want to write the function `atoms : sexp -> string
+list` that returns the list of `Atom`s at the leaves of the
+s-expression.  The code is easy enough (just rotate left-child
+cons-nodes to the right, until we get an atom (or Nil) and then move
+on to the cdr.  This is a good example to consider, because it
+requires multi-level pattern-matching and multi-level
+constructor-expressions.  So the introduction of meaningless
+bureaucracy will be palpable.
+
+```
+let rec atoms =
+  function
+    Nil -> []
+  | Atom a -> [a]
+  | Cons(Cons(caar, cdar), cdr) ->
+      atoms (Cons(caar, Cons (cdar, cdr)))
+  | Cons(Nil, cdr) -> atoms cdr
+  | Cons(Atom a, cdr) -> a :: atoms cdr
+
+```
+
 
 and the code is
 
