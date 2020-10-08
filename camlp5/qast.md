@@ -64,6 +64,9 @@ type +'a hash_consed = private {
   node : 'a }
 ```
 
+NOTE: there is a nuance here that I'll address at the end of ths post
+in the section "Appendix B: Types with and without `vala`".
+
 Let's suppose we want to write the function `atoms : sexp -> string
 list` that returns the list of `Atom`s at the leaves of the
 s-expression.  The code is easy enough (just rotate left-child
@@ -100,8 +103,9 @@ and the hashconsed version is
 ```
 
 As you can see, there are extra patterns `{ node = ...}` and a new
-constructor `make_sexp` (to perform hashtable lookup).  And these
-extra bits appear at multiple levels in both patterns and expressions.
+constructor `make_sexp` (to perform the actual hashtable lookup &
+consing).  And these extra bits appear at multiple levels in both
+patterns and expressions.
 
 Wouldn't it be nice, if we could write one version of this code, viz.
 
@@ -132,10 +136,11 @@ is generated from the type definition, it's not actually any work for
 the programmer to achieve this.
 
 NOTE: Unlike with `ppx_metaquot`, the antiquotations can be placed in
-nearly-arbitrary positions: there is no requirement that they
-correspond to variable-names or identifiers in the OCaml AST: indeed,
-our running example will *not* be the OCaml AST, even though all of
-this machinery has been applied-to the OCaml AST successfully.
+nearly-arbitrary positions in the parse-tree (hence, in the AST):
+there is no requirement that they correspond to variable-names or
+identifiers in the OCaml AST: indeed, our running example will *not*
+be the OCaml AST, even though all of this machinery has been
+applied-to the OCaml AST successfully.
 
 In this post I'll walk you thru how to achieve this goal: building up
 the machinery, step-by-step, to allow one to write basically arbitrary
@@ -468,7 +473,7 @@ provide full hash-consing support for a very complex AST type, and
 full quotation support both for the AST type, and for its
 automatically-generated hashconsed variant.
 
-# Appendix: Parameter-parsing for PPX Rewriters
+# Appendix A: Parameter-parsing for PPX Rewriters
 
 I've shown three different PPX rewriters (`migrate`, `hashcons`, and
 `q_ast`) and in some of their invocations, there are nontrivial OCaml
@@ -538,3 +543,24 @@ to "encode" arguments into easy-to-parse form.  A good comparison is
 with the "@with" syntax of the `ppx_import` PPX rewriter, where it's
 clear that they're shoe-horning types into expression syntax, for want
 of a nicer syntax that is still easily to manipulate.
+
+# Appendix B: Types with without `vala`
+
+In the "Motivation" section, I introduced a type of `sexp`, and then
+the hashconsed version of the type.  Neither type had `vala` markings
+in it.  The mechanism described in this post can equally well work to
+produce quotation-expanders that work over types without `vala`.  The
+only difficulty, is that the *parser* still needs to be defined over a
+version of the type with `vala`, because it will be used to parse
+quotations (which must necessarily contain antiquotations).  But
+everything else works, and in
+`camlp5/pa_ppx_q_ast/tests/{sexp_example,eg_sexp_example}` you will
+find the definition and use of "sexpnovala", a quotation expander for
+the first `sexp` type we defined in this post.  I didn't bother
+building the quotation expander for "hcsexpnovala", but it's a
+straightforward exercise.
+
+In short, the choice of whether your AST type needs to have `vala`
+markings in it, is independent of hash-consing.  You only need to
+supply a version of your AST type with `vala`, along with a parser,
+for the quotation machinery.
