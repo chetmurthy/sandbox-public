@@ -245,7 +245,9 @@ rest of this note.  I've applied it to
 # A Worked Example: s-expressions.
 
 In this section, I'll work thru how to apply the ideas above,
-step-by-step, to s-expressions.
+step-by-step, to s-expressions.  Everything described here is working
+code, documented and tested in
+`camlp5/pa_ppx_q_ast/tests/{sexp_example,eg_sexp_example}`.
 
 ### 0. Write the AST type (without antiquotations)
 
@@ -267,8 +269,12 @@ type sexp =
   | Nil
 ```
 
-the type ` 'a vala` is a Camlp5 type-constructor.  It contains either
-a value of type ` 'a`, or an antiquotation.  Here's the parser:
+The type ` 'a vala` is a Camlp5 type-constructor.  It contains either
+a value of type ` 'a`, or an antiquotation.  A short argument for why
+antiquotations markers are necessary, can be found in "Appendix C: Is
+`vala` Necessary?"
+
+Here's the parser:
 
 ```
   sexp: [
@@ -565,3 +571,56 @@ In short, the choice of whether your AST type needs to have `vala`
 markings in it, is independent of hash-consing.  You only need to
 supply a version of your AST type with `vala`, along with a parser,
 for the quotation machinery.
+
+# Appendix C: Is `vala` Necessary?
+
+Consider that `sexp type
+
+```
+type sexp =
+    Atom of string
+  | Cons of sexp * sexp
+  | Nil
+```
+
+If we want to provide a `ppx_metaquot`-like facility for this type,
+perhaps we can overload the meaning of the strings in atoms.  So the
+s-expression `( _A foo bar fozz)` could mean an s-expression with a
+single meta-variable, `_A`.  But this meta-variable is necessarily a
+variable that can only denote an s-expression, and not a string.  More
+generally, in an AST type if metavariables are merely overloaded
+variables, anyplace that a variable cannot appear, cannot be subject
+to meta-variable-based pattern-matching/substitution.  So it's not
+possible to match on the list of types or expressions in a tuple
+type/expression, nor the list of branches in a match-with.  And on and
+on.  This is why the version of the `sexp` type with antiquotation
+markers
+
+```
+type sexp =
+    Atom of (string vala)
+  | Cons of (sexp vala) * (sexp vala)
+  | Nil
+```
+
+includes `Atom of (string vala)`.  This allows us to write a pattern
+with a metavariable that matches an s-expression, e.g.
+
+```
+Cons (VaVal x, VaVal (Atom (VaVal "foo")))
+```
+
+(in quotation syntax, `<:sexp< ( $exp:x$ . bar ) >>`) or a
+metavariable that matches the `string` in an `Atom`,
+e.g.
+
+```
+Cons
+  (VaVal (Atom (VaVal x)),
+   VaVal (Atom (VaVal "foo")))
+```
+
+And this is a general issue in all (meta-)quotation support, not
+merely for the OCaml AST.  If we want high-quality quotation support
+for our data-types, we need to build high-quality suppot for
+antiquotations.
