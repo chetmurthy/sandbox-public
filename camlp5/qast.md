@@ -29,7 +29,109 @@ https://github.com/camlp5 , in projects `camlp5/pa_ppx`,
 (yet) released, but will be soon.  Working code for everything
 described below can be found at `camlp5/pa_ppx_q_ast/tests`.
 
-# Introduction: the Problem We're Solving
+# Motivation
+
+I think the ability to transparently introduce hash-consing into a
+complex collection of AST types needs no argument.  The ability to use
+"quotations" over such an AST type might need some motivation.  So
+consider a type of s-expressions, viz
+```
+type sexp =
+    Atom of string
+  | Cons of sexp * sexp
+  | Nil
+```
+
+with the obvious parsing that we're all used-to from LISP/Scheme.
+Let's suppose we want to write the function `atoms : sexp -> string
+list` that returns the list `Atom`s at the leaves of the s-expression.
+The code is easy enough (just rotate left-child cons-nodes until we
+get an atom (or Nil) and then move on to the cdr.  This is a good
+example to consider, because it requires multi-level pattern-matching
+and multi-level constructor-expressions.  So the introduction of
+meaningless bureaucracy will be palpable.
+
+```
+let rec atoms =
+  function
+    Nil -> []
+  | Atom a -> [a]
+  | Cons(Cons(caar, cdar), cdr) ->
+      atoms (Cons(caar, Cons (cdar, cdr)))
+  | Cons(Nil, cdr) -> atoms cdr
+  | Cons(Atom a, cdr) -> a :: atoms cdr
+
+```
+
+The hashconsed version of the type is
+
+```
+    type sexp_node =
+        Atom of string Ploc.vala
+      | Cons of sexp Ploc.vala * sexp Ploc.vala
+      | Nil
+    and sexp = sexp_node hash_consed
+```
+
+with (from the opam package `hashcons`)
+```
+type +'a hash_consed = private {
+  hkey : int;
+  tag : int;
+  node : 'a }
+```
+
+and the code is
+
+```
+    let rec atoms =
+      function
+        {node = Nil} -> []
+      | {node = Atom a} -> [a]
+      | {node = Cons({node = Nil}, cdr)} -> atoms cdr
+      | {node = Cons({node = Atom a}, cdr)} -> a :: atoms cdr
+      | {node = Cons ({node = Cons (caar, cdar)}, cdr)} ->
+          atoms (make_sexp (Cons (caar, (make_sexp (Cons (cdar, cdr))))))
+```
+
+As you can see, there are extra patterns `{ node = ...}` and a new
+constructor `make_sexp` (to perform hashtable lookup).  And these
+extra bits appear at multiple levels in both patterns and expressions.
+
+Wouldn't it be nice, if we could write one version of this code, viz.
+
+```
+let rec atoms = function
+    <:sexp< () >> -> []
+  | <:sexp< $atom:a$ >> -> [a]
+  | <:sexp< ( () . $exp:cdr$ ) >> -> atoms cdr
+  | <:sexp< ( $atom:a$ . $exp:cdr$ ) >> -> a::(atoms cdr)
+  | <:sexp< ( ( $exp:caar$ . $exp:cdar$ ) . $exp:cdr$ ) >> ->
+    atoms <:sexp< ( $exp:caar$ . ( $exp:cdar$ . $exp:cdr$ ) ) >>
+```
+
+and merely by changing "<:sexp<" to "<:hcsexp<" get a version of the
+function that works on hashconsed s-expressions?  The text within
+`<:sexp< .... >>` is called a "quotation" in Camlp5, and is similar to
+the same concept in `ppx_metaquot` and the much older LISP idea of
+"quasi-quotation".  The contained text is parsed with a parser for
+s-expressions, slightly modified to have indications for where the
+text `$...$` may appear -- these are called "anti-quotations', and can
+contain OCaml source code (e.g. variables) albeit not quotations (so
+no arbitrary nesting).  The "quotation expander" parses this text to
+AST and applies a converter to produce an OCaml expression or pattern
+AST that does what the quotation intends.  The lovely thing is, by
+changing out the quotation-expander (replace "sexp" with "hcsexp") we
+can change the code that is generated, and if the quotation-expander
+is generated from the type definition, it's not actually any work for
+the programmer to achieve this.
+
+In this post I'll walk you thru how to achieve this goal: building up
+the machinery, step-by-step, to allow one to write basically arbitrary
+expressions in your AST's surface syntax, and automatically get either
+"normal' (no hash-consing) or "hashconsed" patterns & expressions.
+
+# Introduction to the Problem
 
 A while back in the "Future of PPX" post (
 https://discuss.ocaml.org/t/the-future-of-ppx/3766 ) there was some
