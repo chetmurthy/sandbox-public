@@ -303,7 +303,10 @@ Here's the parser:
 
 This is an LL(1) grammar, interpreted by Camlp5, and the marker for
 antiquotations is "V".  Full details of the grammar language can be
-found in the Camlp5 documentation.
+found in the Camlp5 documentation.  You can see in it, that we've used
+`V sexp "exp"` (renamed for convenience to "v_sexp") everywhere
+internally, and that `Atom` is parsed by `V atom "atom"` (again,
+giving an antiquotation position.).
 
 ### 2. Generate a Hashconsed version of the AST type
 
