@@ -432,246 +432,26 @@ The `pa_ppx_q_ast` PPX rewriter generalizes this and makes it possible
 to apply to any AST type (and also to apply to the OCaml AST type in
 Camlp5, so nothing has been lost).
 
+### Using the quotations
 
-
-
-
-
-Here is the type definition for our AST.
+And finally, we can use those quotations:
 
 ```
-type term =
-    Ref of int vala
-  | Abs of term vala
-  | App of term vala * term vala
-```
-(the `vala` type-constructors are the antiquotation markers)
+let rec atoms = function
+    <:sexp< () >> -> []
+  | <:sexp< $atom:a$ >> -> [a]
+  | <:sexp< ( () . $exp:cdr$ ) >> -> atoms cdr
+  | <:sexp< ( $atom:a$ . $exp:cdr$ ) >> -> a::(atoms cdr)
+  | <:sexp< ( ( $exp:caar$ . $exp:cdar$ ) . $exp:cdr$ ) >> ->
+    atoms <:sexp< ( $exp:caar$ . ( $exp:cdar$ . $exp:cdr$ ) ) >>
 
-The surface syntax we'll use is
-```
-term ::= int | term term | "[]"term | "(" term ")"
-```
-with the obvious meaning.
-
-### Generate a Hashconsed version of the AST, with some memo functions
-
-This is the input to the `camlp5/pa_ppx_hashcons` PPX rewriter.  This
-rewriter implements the method of Jean-Christophe Filliatre and
-Sylvain Conchon, from their paper
-[Type-Safe Modular Hash-Consing](https://www.lri.fr/~filliatr/ftp/publis/hash-consing2.pdf).
-In short, we specify a few module-names, equality and hash functions
-for external type-constructors (which necessarily cannot participate
-in hash-consing) and the type-signatures of memo-izers we wish
-generated.  The rewriter generates efficient hash-constructors and
-hash/equality-functions: consult the paper for details.
-
-
-Here's the actual code:
-
-```
-[%%import: Debruijn.term]
-[@@deriving hashcons { hashconsed_module_name = HC
-                     ; normal_module_name = OK
-                     ; memo = {
-                         memo_term = [%typ: term]
-                       ; memo2_int_term = [%typ: int * term]
-                       ; memo2_term_term = [%typ: term * term]
-                       ; memo_int = [%typ: int]
-                       }
-                     ; external_types = {
-                         Ploc.vala = {
-                           preeq = (fun f x y -> match (x,y) with
-                               (Ploc.VaAnt s1, Ploc.VaAnt s2) -> s1=s2
-                             | (Ploc.VaVal v1, Ploc.VaVal v2) -> f v1 v2
-                             )
-                         ; prehash = (fun f x -> match x with
-                             Ploc.VaAnt s -> Hashtbl.hash s
-                           | Ploc.VaVal v -> f v
-                           )
-                         }
-                       }
-                     ; pertype_customization = {
-                         term = {
-                           hashcons_module = Term
-                         ; hashcons_constructor = term
-                         }
-                       }
-                     }]
-```
-
-The resulting OCaml module will contain two new modules: `OK` (which
-contains a copy of the original AST) and `HC` (which contains the
-hashconsed AST, as well as functions for hash-consing, memoizing,
-etc).  The hashconsed AST looks like this:
-
-```
-    type term_node =
-        Ref of int Ploc.vala
-      | Abs of term Ploc.vala
-      | App of term Ploc.vala * term Ploc.vala
-    and term = term_node hash_consed
-```
-
-### Generate functions back-and-forth between "normal" and "hashconsed" versions of the AST
-
-Here's the input to a `pa_ppx_migrate` PPX rewriter, that generates
-migration functions from the "normal" (`OK`) to the "hashconsed"
-(`HC`) AST.  The reverse direction isn't much different.  Notice that
-we don't actually write any migration code, except for external types (`vala`).
-In much-more-complicated examples, the succinctness of this method over the actual
-code can be quite significant.
-
-```
-[%%import: Debruijn_hashcons.OK.term]
-[@@deriving migrate
-    { dispatch_type = dispatch_table_t
-    ; dispatch_table_constructor = make_dt
-    ; dispatchers = {
-        migrate_vala = {
-          srctype = [%typ: 'a Ploc.vala]
-        ; dsttype = [%typ: 'b Ploc.vala]
-        ; subs = [ ([%typ: 'a], [%typ: 'b]) ]
-        ; code = _migrate_vala
-        }
-      ; migrate_term_node = {
-          srctype = [%typ: term_node]
-        ; dsttype = [%typ: Debruijn_hashcons.HC.term_node]
-        }
-      ; migrate_term = {
-          srctype = [%typ: term]
-        ; dsttype = [%typ: Debruijn_hashcons.HC.term]
-        ; code = (fun __dt__ x ->
-            Debruijn_hashcons.HC.term (__dt__.migrate_term_node __dt__ x)
-          )
-        }
-      }
-    }
-]
-```
-
-To invoke the generated code, one writes
-
-```
-let dt = make_dt ()
-let inject x = dt.migrate_term dt x
-```
-
-### Write the Parser
-
-Below is an LL(1) parser for our lambda-terms.  There's nothing special
-going on, except for the `V` symbols, which are how we indicate to the
-parser where anti-quotations are allowed.  The syntax and semantics of
-these parsers is explained in the Camlp5 documentation.
-
-The last line of this parser code defines an entry `term_hashcons_eoi`
-that parses a term, and using the migration code above, promotes it to
-a hashconsed AST value.
-
-```
-value term_eoi = Grammar.Entry.create gram "term_eoi";
-value term_hashcons_eoi = Grammar.Entry.create gram "term_hashcons_eoi";
-
-EXTEND
-  GLOBAL: term_eoi term_hashcons_eoi;
-
-  term: [
-    "apply" LEFTA
-    [ l = LIST1 (V (term LEVEL "abs") "term") ->
-      Pcaml.unvala (List.fold_left (fun lhs rhs -> <:vala< App lhs rhs >>) (List.hd l) (List.tl l)) ]
-  | "abs"
-    [ "["; "]" ; e = V (term LEVEL "abs") "term" -> Abs e ]
-  |  "var" [ n = V INT "ref" -> Ref (vala_map int_of_string n)
-    | "(" ; e = SELF ; ")" -> e
-    ]
-  ]
-  ;
-
-  term_eoi: [ [ x = term; EOI -> x ] ];
-  term_hashcons_eoi: [ [ x = term; EOI -> Debruijn_migrate.Inject.inject x ] ];
-
-END;
-```
-
-### Generate quotations for the "normal" AST
-
-In Camlp5, "quotations" are a mechanism for writing expressions in the
-surface syntax of some language, and having them expanded into
-equivalent expressions (or patterns).  These quotations can contain
-"holes" (anti-quotations) which are preserved, allowing to use
-quotations in writing OCaml code.
-
-To generate an "okdebruijn" quotation, we use the `pa_ppx_q_ast` PPX
-rewriter with input
-```
-[%%import: Debruijn_hashcons.OK.term]
-[@@deriving q_ast {
-    data_source_module = Debruijn_hashcons.OK
-  ; expr_meta_module = MetaE
-  ; patt_meta_module = MetaP
-  }]
-
-Quotation.add "okdebruijn"
-  (apply_entry Pa_debruijn.term_eoi E.term P.term)
-
-```
-
-(there is a little more code, but it's to deal with primitive types).
-
-This generates the code that converts values of the AST type to OCaml
-expressions and patterns, and then installs those values, along with a
-parser, into the quotation machinery.
-
-### Using quotations over "normal" ASTs
-
-Here is an example of code using these quotations.  It's not much more
-succinct than the raw OCaml code one might write, but it *is* more
-comprehensible (assuming one is already familiar with the surface
-syntax of the AST).
-
-```
-let rec copy = function
-    <:okdebruijn:< $ref:x$ >> -> <:okdebruijn:< $ref:x$ >>
-  | <:okdebruijn:< $term:_M$ $term:_N$ >> -> <:okdebruijn:< $term:copy _M$ $term:copy _N$ >>
-  | <:okdebruijn:< []$term:_M$ >> -> <:okdebruijn:< []$term:copy _M$ >>
-end
-```
-and one can also write more-complex expressions, like:
-```
-let v1 = <:debruijn< [][]1 >>
-```
-(for the "K" combinator).
-
-### Generate quotations for "hashconsed" ASTs
-
-Quotations over hashconsed ASTs are generated pretty much the same as over normal ASTs:
-```
-[%%import: Debruijn_hashcons.HC.term]
-[@@deriving q_ast {
-    data_source_module = Debruijn_hashcons.HC
-  ; quotation_source_module = Debruijn_migrate.Project
-  ; expr_meta_module = MetaE
-  ; patt_meta_module = MetaP
-  ; hashconsed = true
-  }]
-
-Quotation.add "hcdebruijn"
-  (apply_entry Pa_debruijn.term_hashcons_eoi E.term P.term)
-
-```
-
-and again, there's a little code left out, but nothing specific to
-this example.  This generates and installs a "hcdebruijn" quotation.
-
-### Using quotations over "hashconsed" ASTs
-
-And finally, here's the same "copy" function, but this time over
-hashconsed ASTs.  Notice that it's almost the same as before:
-
-```
-let rec copy = function
-    <:hcdebruijn:< $ref:x$ >> -> <:hcdebruijn:< $ref:x$ >>
-  | <:hcdebruijn:< $term:_M$ $term:_N$ >> -> <:hcdebruijn:< $term:copy _M$ $term:copy _N$ >>
-  | <:hcdebruijn:< []$term:_M$ >> -> <:hcdebruijn:< []$term:copy _M$ >>
+let rec atoms = function
+    <:hcsexp< () >> -> []
+  | <:hcsexp< $atom:a$ >> -> [a]
+  | <:hcsexp< ( () . $exp:cdr$ ) >> -> atoms cdr
+  | <:hcsexp< ( $atom:a$ . $exp:cdr$ ) >> -> a::(atoms cdr)
+  | <:hcsexp< ( ( $exp:caar$ . $exp:cdar$ ) . $exp:cdr$ ) >> ->
+    atoms <:hcsexp< ( $exp:caar$ . ( $exp:cdar$ . $exp:cdr$ ) ) >>
 ```
 
 # Discussion
