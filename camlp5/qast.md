@@ -26,8 +26,9 @@ AST).
 All of the code discussed here is available on github at:
 https://github.com/camlp5 , in projects `camlp5/pa_ppx`,
 `camlp5/pa_ppx_{migrate,hashcons,q_ast,params}`.  The latter ones are
-not (yet) released on OPAM, but will be soon.  Working code for
-everything described below can be found at
+not (yet) released on OPAM, but will be soon.  I apologize in advance
+for the nonexistent-to-poor documentation: I'm working on it!  Working
+code for everything described below can be found at
 `camlp5/pa_ppx_q_ast/tests`, in the directories `sexp_example` and
 `eg_sexp_example`.
 
@@ -362,7 +363,8 @@ for generating the function from the "normal" (`OK`) to the
 Notice that we don't actually write any migration code, except for
 external types (`vala`).  In much-more-complicated examples, the
 succinctness of this method over the actual code can be quite
-significant.  It has been applied to the 10 versions of the OCaml AST,
+significant.  It has been applied to the 10 versions of the OCaml AST
+(to generate something quasi-equivalent to `ocaml-migrate-parsetree`,
 and the succinctness gains there are significant.
 
 ```
