@@ -579,7 +579,7 @@ for the quotation machinery.
 
 # Appendix C: Is `vala` Necessary?
 
-Consider that `sexp type
+Consider that `sexp` type
 
 ```
 type sexp =
