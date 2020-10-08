@@ -9,7 +9,7 @@ I should note that the portions regarding hash-consing are all a
 pretty faithful re-implementation and mechanization of the paper of
 Filliatre and Conchon:
 [Type-Safe Modular Hash-Consing](https://www.lri.fr/~filliatr/ftp/publis/hash-consing2.pdf).
-All errors are mine, though.
+All errors are mine, of course.
 
 TL;DR This post describes how, starting with an AST type and a parser
 for it, we can more-or-less automatically generate
@@ -26,9 +26,10 @@ AST).
 All of the code discussed here is available on github at:
 https://github.com/camlp5 , in projects `camlp5/pa_ppx`,
 `camlp5/pa_ppx_{migrate,hashcons,q_ast,params}`.  The latter ones are
-not (yet) released, but will be soon.  Working code for everything
-described below can be found at `camlp5/pa_ppx_q_ast/tests`, in the
-directories `sexp_example` and `eg_sexp_example`.
+not (yet) released on OPAM, but will be soon.  Working code for
+everything described below can be found at
+`camlp5/pa_ppx_q_ast/tests`, in the directories `sexp_example` and
+`eg_sexp_example`.
 
 # Motivation (a Concrete Example)
 
@@ -45,12 +46,12 @@ type sexp =
 ```
 
 with the obvious parsing that we're all used-to from LISP/Scheme.  The
-hashconsed version of the type is
+hashconsed version of this type is
 
 ```
     type sexp_node =
-        Atom of string Ploc.vala
-      | Cons of sexp Ploc.vala * sexp Ploc.vala
+        Atom of string
+      | Cons of sexp * sexp
       | Nil
     and sexp = sexp_node hash_consed
 ```
@@ -377,7 +378,7 @@ and the succinctness gains there are significant.
 ]
 ```
 
-### 4. Generate functions to map (parsed) values to OCaml expressions/patterns
+### 4. Generate functions to map (parsed) values to OCaml AST expressions/patterns
 
 We use the `pa_ppx_q_ast` PPX rewriter, and invoke it twice: once with
 the "normal" AST type (`Sexp.sexp`) and once with the hashconsed type
