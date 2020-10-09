@@ -529,7 +529,9 @@ type default_dispatcher_t =
 [@@deriving params]
 
 type t =
-  { inherit_type : ctyp option;
+  { optional : bool
+  ; plugin_name : string
+  ; inherit_type : ctyp option;
     dispatch_type_name : lident[@name dispatch_type];
     dispatch_table_constructor : lident;
     declared_dispatchers : (lident, Dispatch1.tyarg_t) alist
