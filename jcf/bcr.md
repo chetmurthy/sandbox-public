@@ -3,24 +3,23 @@
 One often sees teachers who categorically refuse to use `break` and
 `continue`, not to speak of exiting a loop with a `return`.  This is a
 shame, and I will argue in favor of these three constructions.
-
 Everything I'm going to say below applies equally to exiting a loop
-with `break`, using `continue`, or the early exit of a function with
-`return` (including from inside a loop).
+with `break`, using `continue`, as well as the early exit of a
+function with `return` (including from inside a loop).
 
 1. When we use a language, and especially when we teach it, it must be
-  done **idiomatically**.  We do our students ill-service, when we
-  fail to teach them idiomatic usage: both because it is what they'll
-  find in the standard library (and in code written by others) and
-  because it's probably what is compiled most efficiently (otherwise,
-  it wouldn't be idiomatic).
+  done **idiomatically**.  We serve our students poorly, when we fail
+  to teach them idiomatic usage: both because it is what they'll find
+  in the standard library (and in code written by others) and because
+  it's probably what is compiled most efficiently (otherwise, it
+  wouldn't be idiomatic).
 
 2. To do without `break/continue/return` when writing loops requires
    **contortions**, usually based on Boolean variables, which
 
-		* obscures the code for the programmer as well as the reader
-		
-		* greatly increases the risk of error
+	* obscures the code for the programmer as well as the reader
+	
+	* greatly increases the risk of error
 
    Beyond these two phenomena, the code is generally longer, which is
    also unfortunate.
