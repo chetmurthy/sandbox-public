@@ -2,7 +2,7 @@
 
 One often sees teachers who categorically refuse to use `break` and
 `continue`, not to speak of exiting a loop with a `return`.  This is a
-shame, and I will argue in favor of these three constructions.
+shame, and I will argue in favor of these three constructs.
 Everything I'm going to say below applies equally to exiting a loop
 with `break`, using `continue`, as well as the early exit of a
 function with `return` (including from inside a loop).
@@ -24,7 +24,7 @@ function with `return` (including from inside a loop).
    Beyond these two phenomena, the code is generally longer, which is
    also unfortunate.
 
-3. In the same vein, these three constructions allow us to **simplify
+3. In the same vein, these three constructs allow us to **simplify
    control-flow, keeping it as linear as possible**.  For example a
    `return` can allow us to avoid a superfluous `else`:
 
@@ -64,7 +64,7 @@ function with `return` (including from inside a loop).
    known, easily identified.)  Programming languages all contain lots
    of subtleties and I understand that as teachers we deliberately
    eschew the sordid aspects (I do this myself when teaching
-   beginners). But why discard simple constructions, which also make
+   beginners). But why discard simple constructs, which also make
    the code more elegant ?
 
 While `break/continue/return` are present in most imperative
