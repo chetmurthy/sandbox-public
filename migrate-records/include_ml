@@ -1,0 +1,7 @@
+#load "rec_types.cmo";;
+#load "rec_migrate.cmo";;
+open Rec_migrate ;;
+let f = { dir = `Buy ; quantity = 10 ; price = 1.0 ; dropped = true } ;;
+
+let dt = make_dt false ;;
+dt.migrate_foo dt f ;;

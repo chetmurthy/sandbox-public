@@ -8,7 +8,7 @@ DEBUG=-g
 
 all: rec_migrate.cmo
 
-rec_types.cmo: rec_types.ml
+rec_types.cmo rec_types.cmi: rec_types.ml
 	$(NOT_OCAMLFIND) preprocess $(OCAMLCFLAGS) -package $(PACKAGES),$(PRPACKAGE),pa_ppx.import,pa_ppx_migrate $(IMPORT_CFLAGS) -syntax $(SYNTAX) $< > $*_ppo.ml
 	$(OCAMLFIND) ocamlc $(DEBUG) $(WARNERR) $(OCAMLCFLAGS) -package $(PACKAGES),pa_ppx.import,pa_ppx_migrate $(IMPORT_CFLAGS) -syntax camlp5o -c $<
 
