@@ -7,6 +7,6 @@ clean:
 
 bench:: caml1
 	@echo "==== python ===="
-	python py1.py -c 10 -d 10 CAJAL/CAJAL/data/swc/320668879.swc
+	python py1.py -w 100 -c 10 -d 10 CAJAL/CAJAL/data/swc/320668879.swc
 	@echo "==== caml1 ===="
-	./caml1 -count 10 -dump 10 CAJAL/CAJAL/data/swc/320668879.swc
+	./caml1 -warmup 100 -count 10 -dump 10 CAJAL/CAJAL/data/swc/320668879.swc

@@ -89,7 +89,9 @@ let main() =
   if !dump <> -1 then
     Fmt.(pf stderr "Dump: %s\n%!" (dump_node (Hashtbl.find d !dump))) ;
   let stime = Unix.gettimeofday() in
-  ignore (read_swc_node_dict ~filepath:filename) ;
+  for i = 1 to  count do
+    ignore (read_swc_node_dict ~filepath:filename)
+  done;
   let etime = Unix.gettimeofday() in
   Fmt.(pf stderr "elapsed: %f\n%!" (etime -. stime))
 ;;
