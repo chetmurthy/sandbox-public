@@ -26,6 +26,25 @@ class NeuronNode:
     def is_soma_node(self) -> bool:
         return self.structure_id == 1
 
+def read1(line: str, file_path: str, linenum: int) -> NeuronNode:
+    row = line.strip().split()[0:7]
+    if len(row) < 7:
+        raise TypeError(
+            "Row "
+            + str(linenum)
+            + " in file "
+            + file_path
+            + " has fewer than seven whitespace-separated strings."
+        )
+    nn = NeuronNode(
+        sample_number=int(row[0]),
+        structure_id=int(row[1]),
+        coord_triple=(float(row[2]), float(row[3]), float(row[4])),
+        radius=float(row[5]),
+        parent_sample_number=int(row[6]),
+    )
+    return nn
+
 def read_swc_node_dict(file_path: str) -> dict[int, NeuronNode]:
     r"""
     Read the swc file at `file_path` and return a dictionary mapping sample numbers \
@@ -43,22 +62,8 @@ def read_swc_node_dict(file_path: str) -> dict[int, NeuronNode]:
         for n, line in enumerate(file):
             if line[0] == "#" or len(line.strip()) < 2:
                 continue
-            row = line.strip().split()[0:7]
-            if len(row) < 7:
-                raise TypeError(
-                    "Row "
-                    + str(n)
-                    + " in file "
-                    + file_path
-                    + " has fewer than seven whitespace-separated strings."
-                )
-            nodes[int(row[0])] = NeuronNode(
-                sample_number=int(row[0]),
-                structure_id=int(row[1]),
-                coord_triple=(float(row[2]), float(row[3]), float(row[4])),
-                radius=float(row[5]),
-                parent_sample_number=int(row[6]),
-            )
+            nn = read1(line, file_path, n)
+            nodes[nn.sample_number] = nn
     return nodes
 
 def main():

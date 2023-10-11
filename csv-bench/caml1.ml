@@ -19,9 +19,7 @@ let dump_node nn =
 
 let strip s = [%subst {|[ \r\n]+$|} / ""] s
 
-let read1 ~filepath ~linenum h line =
-  let line = strip line in
-  if String.get line 0 = '#' || String.length line < 2 then () else
+let read1 ~filepath ~linenum line =
   let row = [%split {|\s+|}] line in
   if List.length row < 7 then
     failwith Fmt.(str "Row %d in file %s has fewer than seven whitespace-separated strings."
@@ -42,7 +40,7 @@ let read1 ~filepath ~linenum h line =
       ; radius
       ; parent_sample_number
       } in
-    Hashtbl.add h sample_number v
+    v
   | _ ->
      failwith Fmt.(str "Malformed Row %d in file %s" linenum filepath)
 
@@ -53,7 +51,10 @@ let read_swc_node_dict ~filepath =
   try while true do
         let line = input_line ic in
         incr linenum ;
-        read1 ~filepath ~linenum:!linenum h line
+        let line = strip line in
+        if String.get line 0 = '#' || String.length line < 2 then () else
+        let v = read1 ~filepath ~linenum:!linenum line in
+        Hashtbl.add h v.sample_number v
       done ;
       close_in ic ;
       h ;
